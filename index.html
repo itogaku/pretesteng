@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刷りたてドリル | 教科書本文からテスト対策プリント作成</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F4F3ED; --panel:#FFFFFF; --ink:#232C36; --ink-soft:#5B6470;
+    --rule:#D9D5C7; --rule-strong:#B9B3A0; --red:#B23A2F; --red-soft:#E8CFC9;
+    --green:#3B6E52; --green-soft:#D9E6DE;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{ background:var(--paper); color:var(--ink); font-family:'Noto Sans JP', sans-serif; line-height:1.7; }
+  h1,h2,h3{ font-family:'Zen Kaku Gothic New', sans-serif; letter-spacing:.02em; }
+
+  .app{ max-width:1280px; margin:0 auto; padding:32px 24px 80px; }
+  header.site{
+    display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    margin-bottom:28px; padding-bottom:20px; border-bottom:3px solid var(--ink);
+  }
+  header.site h1{ font-size:26px; font-weight:900; margin:0; }
+  header.site h1 .accent{ color:var(--red); }
+  header.site .tagline{ font-size:12.5px; color:var(--ink-soft); margin:0; }
+  header.site .stamp{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green);
+    border:1.5px solid var(--green); border-radius:999px; padding:4px 12px; transform:rotate(-3deg); white-space:nowrap;
+  }
+
+  .layout{ display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
+  @media (max-width:920px){ .layout{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--panel); border:1.5px solid var(--rule-strong); border-radius:4px; padding:22px;
+    position:sticky; top:24px; max-height:calc(100vh - 48px); overflow-y:auto;
+  }
+  @media (max-width:920px){ .panel{ position:static; max-height:none; } }
+
+  .panel h2{ font-size:15px; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
+  .panel h2 .num{
+    display:inline-flex; align-items:center; justify-content:center; width:20px;height:20px;
+    background:var(--ink); color:var(--paper); border-radius:50%; font-size:11px; font-family:'JetBrains Mono',monospace;
+  }
+  .panel .hint{ font-size:11.5px; color:var(--ink-soft); margin:0 0 12px; }
+  .section-block{ margin-bottom:26px; }
+  .section-block:last-of-type{ margin-bottom:18px; }
+
+  .selector-row{ display:flex; gap:8px; margin-bottom:10px; }
+  .selector-row select{
+    flex:1; border:1.5px solid var(--rule-strong); border-radius:3px; padding:9px 8px;
+    font-family:'Noto Sans JP', sans-serif; font-size:13px; color:var(--ink); background:#FCFBF8;
+  }
+  .selector-row select:focus{ outline:2px solid var(--red); outline-offset:1px; }
+
+  .part-checks{ display:flex; flex-direction:column; gap:2px; }
+  .part-check-row{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding:8px 10px; border:1px solid var(--rule-strong); border-radius:3px; margin-bottom:6px; background:#FCFBF8;
+  }
+  .part-check-row label{ display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; flex:1; }
+  .part-check-row input[type=checkbox]{ accent-color:var(--red); width:16px; height:16px; }
+  .part-check-row .p-badges{ display:flex; gap:4px; }
+  .part-check-row .badge{
+    font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-soft);
+    border:1px solid var(--rule-strong); border-radius:3px; padding:1px 5px; white-space:nowrap;
+  }
+  .part-check-row .badge.has-ja{ color:var(--green); border-color:var(--green); }
+
+  .type-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 0; border-bottom:1px dashed var(--rule); }
+  .type-row:last-child{ border-bottom:none; }
+  .type-row label.tname{ display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer; }
+  .type-row input[type=checkbox]{ width:16px;height:16px; accent-color:var(--red); cursor:pointer; }
+  .type-row .count{ display:flex; align-items:center; gap:6px; }
+  .type-row .count button{
+    width:22px;height:22px; border:1px solid var(--rule-strong); background:#fff; border-radius:3px;
+    font-size:13px; cursor:pointer; line-height:1; color:var(--ink);
+  }
+  .type-row .count button:hover{ background:var(--paper); }
+  .type-row .count span{ font-family:'JetBrains Mono',monospace; font-size:12.5px; width:18px; text-align:center; }
+  .type-row .avail{ font-size:10.5px; color:var(--ink-soft); }
+  .type-row.disabled{ opacity:.4; pointer-events:none; }
+
+  .mode-toggle{
+    display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink);
+    border:1px solid var(--rule-strong); border-radius:3px; padding:10px 12px; margin-bottom:12px; background:#FCFBF8;
+  }
+  .mode-toggle label{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .mode-toggle input[type=radio]{ accent-color:var(--red); }
+
+  .passage-block{
+    border:1px solid var(--rule-strong); border-radius:3px; background:var(--paper);
+    padding:16px 18px; font-size:13.5px; line-height:2; margin-bottom:16px;
+  }
+  .blank-num{ color:var(--red); font-weight:700; }
+  .underline-seg{ text-decoration:underline; text-decoration-color:var(--red); text-decoration-thickness:1.5px; }
+  .underline-label{ color:var(--red); font-size:10px; font-weight:700; margin:0 2px; }
+  .sub-q{ margin:16px 0 8px; font-size:13px; font-weight:700; }
+  .qitem-inline{ display:inline-block; margin:0 16px 8px 0; font-size:12.5px; }
+  .ja-hint{ color:var(--ink-soft); font-size:12px; margin-top:3px; }
+
+  .generate-btn{
+    width:100%; padding:13px; background:var(--ink); color:var(--paper); border:none; border-radius:3px;
+    font-family:'Zen Kaku Gothic New', sans-serif; font-weight:700; font-size:14.5px; cursor:pointer; letter-spacing:.03em;
+  }
+  .generate-btn:hover{ background:#3a4552; }
+  .err{ margin-top:10px; font-size:12.5px; color:var(--red); background:var(--red-soft); border:1px solid var(--red); border-radius:3px; padding:8px 10px; }
+
+  .stage{ min-height:400px; }
+  .empty-state{ border:2px dashed var(--rule-strong); border-radius:4px; padding:60px 30px; text-align:center; color:var(--ink-soft); background:var(--panel); }
+  .empty-state .big{ font-family:'Zen Kaku Gothic New',sans-serif; font-size:16px; color:var(--ink); margin-bottom:6px; }
+
+  .toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar .toggles{ display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-soft); }
+  .toolbar label{ display:flex; align-items:center; gap:6px; cursor:pointer; white-space:nowrap; }
+  .print-btn{
+    padding:9px 18px; background:var(--red); color:#fff; border:none; border-radius:3px;
+    font-family:'Zen Kaku Gothic New',sans-serif; font-weight:700; font-size:13px; cursor:pointer;
+  }
+  .print-btn:hover{ background:#963026; }
+
+  .sheet{ background:#fff; border:1px solid var(--rule-strong); box-shadow:0 2px 10px rgba(0,0,0,.06); padding:34px 38px; margin-bottom:22px; }
+  .sheet-header{ display:grid; grid-template-columns:1fr auto; gap:16px; padding-bottom:14px; margin-bottom:22px; border-bottom:2.5px solid var(--ink); }
+  .sheet-header .title-area .kicker{ font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.12em; color:var(--ink-soft); text-transform:uppercase; }
+  .sheet-header .title-area h3{ margin:2px 0 0; font-size:20px; }
+  .idbox{ display:grid; grid-template-columns:repeat(3,72px); border:1.3px solid var(--ink); }
+  .idbox .cell{ border-right:1.3px solid var(--ink); border-bottom:1.3px solid var(--ink); padding:4px 6px; }
+  .idbox .cell:last-child{ border-right:none; }
+  .idbox .cell:nth-last-child(-n+3){ border-bottom:none; }
+  .idbox .cell .lbl{ font-family:'JetBrains Mono',monospace; font-size:8.5px; color:var(--ink-soft); }
+
+  .qtype-section{ margin-bottom:26px; page-break-inside:avoid; }
+  .qtype-section h4{ font-size:13.5px; margin:0 0 12px; padding:5px 10px; background:var(--ink); color:var(--paper); display:inline-block; border-radius:2px; }
+  .qitem{ display:flex; gap:10px; margin-bottom:14px; font-size:13.5px; page-break-inside:avoid; }
+  .qitem .qn{ font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--red); min-width:22px; }
+  .qitem .qbody{ flex:1; }
+  .answer-line{ display:inline-block; min-width:220px; border-bottom:1px solid var(--ink); margin-left:6px; }
+  .reorder-words{ display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+  .reorder-words span{ border:1px solid var(--rule-strong); border-radius:3px; padding:3px 9px; font-size:12.5px; background:var(--paper); }
+  .tf-choice{ display:inline-flex; gap:14px; margin-left:10px; font-family:'JetBrains Mono',monospace; font-size:12.5px; }
+  .tf-choice span{ border:1px solid var(--ink-soft); border-radius:50%; padding:2px 8px; }
+
+  .answer-key .sheet-header{ border-bottom-color:var(--green); }
+  .answer-key .kicker{ color:var(--green); }
+  .answer-key .qn{ color:var(--green); }
+  .ans-text{ color:var(--green); font-weight:600; }
+  footer.credit{ text-align:center; font-size:11px; color:var(--ink-soft); margin-top:10px; }
+
+  @media print{
+    body{ background:#fff; }
+    .no-print{ display:none !important; }
+    .app{ padding:0; max-width:none; }
+    .layout{ display:block; }
+    .sheet{ box-shadow:none; border:none; padding:0; margin:0; }
+    .qtype-section{ break-inside:avoid; }
+    .answer-key{ break-before:page; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="site">
+    <div class="brand">
+      <h1>刷<span class="accent">り</span>たてドリル</h1>
+      <p class="tagline">英語本文＋日本語訳から、定期テスト対策プリントを組み立てる</p>
+    </div>
+    <div class="stamp">OFFLINE / NO AI</div>
+  </header>
+
+  <div class="layout">
+
+    <div class="panel no-print">
+
+      <div class="section-block">
+        <h2><span class="num">1</span>教材を選ぶ</h2>
+        <p class="hint">学年とProgramを選び、使うPartにチェックを入れてください。</p>
+        <div class="selector-row">
+          <select id="gradeSelect"></select>
+          <select id="programSelect"></select>
+        </div>
+        <div id="partChecks" class="part-checks"></div>
+      </div>
+
+      <div class="section-block">
+        <h2><span class="num">2</span>出題設定</h2>
+        <p class="hint">形式ごとにON/OFFと出題数を選べます。</p>
+        <div class="mode-toggle" id="modeToggle">
+          <label><input type="radio" name="printMode" value="itemized" checked> 項目別問題（今まで通り）</label>
+          <label><input type="radio" name="printMode" value="longReading"> 長文読解形式（入試スタイル）</label>
+        </div>
+        <div id="typeList"></div>
+      </div>
+
+      <button class="generate-btn" id="genBtn">プリントを生成する</button>
+      <div id="errBox"></div>
+    </div>
+
+    <div class="stage" id="stage">
+      <div class="empty-state">
+        <div class="big">まだプリントは生成されていません</div>
+        教材を選び、「プリントを生成する」を押してください。
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ================= PRESET DATA ================= */
+const PROGRAMS = [
+{
+  label: "中3 Program 1",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "The cherry blossoms are so beautiful. Yes. Oh, it's almost noon. Let's have lunch. That's good news! I'm starving. Here is your bento. Thanks. Who made it? My mother did. I asked her to make bentos for us. Wow! It's so cute and colorful! This is a kyara-ben, or a character bento. It's popular in Japan. Do you like it? Yes, very much. I don't like carrots, but I can eat them this way.",
+      textJa: "サクラの花がとてもきれいだね。そうね。あら、もう少しで正午だわ。昼食を食べましょう。それはいいね！とてもおなかがすいているんだ。これがあなたのお弁当よ。ありがとう。だれが作ったの？母が作ったのよ。母に私たちのためにお弁当を作ってくれるように頼んだのよ。うわー！とてもかわいくてカラフルだね！これはキャラ弁、つまりキャラクターのお弁当よ。日本で人気があるのよ。気に入った？うん、とても。ぼくはニンジンが好きじゃないけど、ころすれば食べられるよ。",
+      qa: [{question:"Is Bill hungry?", answer:"Yes, he is."}, {question:"Who made the bentos for Bill and Mao?", answer:"Mao's mother did."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Bentos are not always homemade. Do you know about ekibens? No. What are they? They're bentos too. We can buy them at train stations. I see. What's special about ekibens? They have local food, such as Kobe beef and oysters from Hiroshima. I hear more than 2,000 kinds of ekibens are sold in Japan. That many? Someday I want to travel around Japan by train and try many ekibens! Sounds fantastic. It's fun to find your favorite ekiben on a trip.",
+      textJa: "お弁当は自家製とは限らないわ。あなたは駅弁について知っている？知らないよ。それは何？それもお弁当よ。列車の駅で買えるのよ。なるほど。駅弁って何が特別なの？たとえば神戸牛や広島産のカキなどの地元の食べ物が入っているの。日本では2,000種類以上の駅弁が売られているそうよ。そんなにたくさん？いつか、ぼくは列車で日本中を旅行して、たくさんの駅弁を食べてみたいな。すばらしそうね。旅行でお気に入りの駅弁を見つけるのは楽しいわね。",
+      qa: [{question:"Where can we buy ekibens?", answer:"We can buy them at train stations."}, {question:"Are there many kinds of bentos at Japanese convenience stores?", answer:"Yes, there are."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "There are many varieties of bentos at convenience stores in Japan. Maybe you have eaten some before. In order to keep enough bentos in stock, each convenience store has to order more bentos than they need. This is a cause of food waste. Some convenience store chains are trying to reduce food waste. Have you ever heard of chilled bentos? They can be sold for a few days longer than normal bentos. If we want to stop food waste, we need more good ideas like this.",
+      textJa: "日本のコンビニにはたくさんの種類のお弁当があります。たぶんあなたは以前にいくつか食べたことがあるでしょう。お弁当の十分な在庫を確保するために、それぞれのコンビニは必要以上のお弁当を注文しなければなりません。これが食品廃棄物の原因です。いくつかのコンビニチェーンは食品廃棄物を減らそうとしています。あなたは今までにチルド弁当のことを聞いたことがありますか。それらはふつうのお弁当よりも数日間長く売ることができます。もし私たちが食品廃棄物を止めたいなら、このようなよいアイディアがもっと必要です。",
+      qa: [{question:"What's special about chilled bentos?", answer:"They can be sold for a few days longer than normal bentos."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中3 Program 2",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "You look sleepy, Felipe. I slept for only four hours last night. Only four hours? You should know that sleep affects your health. Do you know much about sleep? In fact, I've just read this book about sleep. What does it say about sleeping time? It says we need to sleep for at least six hours a day. OK. I'll sleep for eight hours tonight. Well, you can't make up for a lack of sleep later on. Really? Then what should I do? You should live a regular life.",
+      textJa: "眠そうに見えますね、フェリペ。昨夜は4時間しか寝てないんです。たった4時間だけですか。睡眠があなたの健康に影響を及ぼすことを知るべきですよ。あなたは知っていますか、たくさん睡眠について。実際のところ、私はちょうど読んだところです、この本を、睡眠についての。何を、それは言っていますか、睡眠時間について。それは言っています、私たちは少なくとも6時間眠る必要があると、1日に。わかりました。私は眠るつもりです、8時間、今夜は。うーん、あなたは睡眠不足を補うことはできないのです、あとで。ほんとうですか。それでは、何を私はすべきですか。あなたは規則正しい生活をするべきです。",
+      qa: [{question:"How long did Felipe sleep last night?", answer:"He slept for (only) four hours."}, {question:"How many hours a day do we need to sleep?", answer:"We need to sleep for at least six hours."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Have you ever felt tired even after you slept for a long time? Yes, I have. On such days, I can't concentrate on anything. When you are tired, you need a good sleep. A \"good\" sleep? What should I do? You should take a bath 90 minutes before going to bed. Then your body temperature will be just right when you sleep. Do you do that? Yes. I've kept this habit for years. So I'm always full of energy. I see. I'll try it tonight.",
+      textJa: "今までに長い時間眠ったあとでも疲れを感じたことはありますか。はい、あります。そんな日は何にも集中できません。疲れているときは、よい睡眠が必要ですよ。「よい」睡眠ですか。ぼくは何をすればよいのですか。寝る90分前におふろに入るといいですよ。そうすれば、眠るときに体温がちょうどよくなるでしょう。先生はそうしているのですか。ええ。私は何年もこの習慣を続けています。だからいつも元気いっぱいなのです。なるほど。今夜やってみます。",
+      qa: [{question:"What do we need when we are tired?", answer:"We need a good sleep."}, {question:"What does Ms. Miller do to have a good sleep?", answer:"She takes a bath 90 minutes before going to bed."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "Do you use your smartphone before going to bed? If you look at the bright screen at night, your brain will believe it is daytime. Thus you will not be able to fall asleep easily. To get a good sleep, you should change this habit. People have started to see the positive effects of good sleep on their work. For example, some companies have introduced a short nap time early in the afternoon. As a result, the employees have been working better. The important thing is not to sleep too long.",
+      textJa: "あなたは寝る前にスマートフォンを使いますか。もしあなたが明るい画面を夜に見たりすると、脳は日中だと信じこんでしまうでしょう。そのため、簡単に眠りに落ちることができなくなるでしょう。よい睡眠をとるためには、この習慣を変えるべきです。人々はよい睡眠が仕事にもたらす好ましい効果に気づき始めました。たとえば、午後早くに短い昼寝の時間を導入した会社もあります。その結果として、従業員はよりよい状態で働き続けています。重要なことは長く眠りすぎないことです。",
+      qa: [{question:"Can people work better after a short nap?", answer:"Yes, they can."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中3 Program 3",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Daniel, what did you do last weekend? I watched an NBA game on TV. Oh, yes. You told me that you like watching basketball games. That's right. I never miss a game. I see. Have you ever been to an NBA game? Yes, I've been to a few games. I enjoyed not only the games but also the half-time shows. It must be exciting. What's your favorite team? It's the Raptors. The team is based in Toronto. Wow, there's an NBA team in Canada too!",
+      textJa: "ダニエル、あなたはこの前の週末に何をしたの？私はテレビでNBAの試合を見たんだ。ああ、そう。あなたはバスケットボールの試合を見るのが好きだって私に言っていたわね。そのとおり。私は決して試合を見逃さないよ。なるほど。あなたは今までにNBAの試合に行ったことがありますか。はい、私は2、3回試合に行ったことがあります。私は試合だけでなく、ハーフタイムショーも楽しみました。それはわくわくするに違いありません。あなたの大好きなチームは何ですか。それはラプターズです。そのチームはトロントに活動の拠点を置いています。うわー、カナダにもNBAのチームがありますね！",
+      qa: [{question:"Has Daniel ever been to an NBA game?", answer:"Yes, he has."}, {question:"Are there NBA teams only in the U.S.?", answer:"No, there aren't. (There's an NBA team in Canada too.)"}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Basketball was invented by a P.E. teacher in Massachusetts in 1891. During the cold winters, the students could not enjoy sports outside. He created a new indoor sport for them. They used peach baskets as goals. So they named the game basketball. In fact, a Japanese student played in the first basketball game. The student also drew a picture of this game. The P.E. teacher used it in his report to introduce basketball. This report made the sport famous in the U.S.",
+      textJa: "バスケットボールは1891年に、マサチューセッツのある体育教師によって考案されました。寒い冬の間、学生たちは外でスポーツを楽しむことができませんでした。その教師は学生たちのために新しい屋内のスポーツを作り出しました。彼らはゴールとしてモモのかごを使いました。それでそのゲームをバスケットボールと名づけたのです。実は、ある日本人の学生が初めてのバスケットボールの試合でプレーしていました。その学生はこの試合の絵も描きました。体育教師はバスケットボールを紹介するための報告書でその絵を使いました。この報告書により、そのスポーツはアメリカで有名になったのです。",
+      qa: [{question:"Why did the P.E. teacher invent basketball?", answer:"Because the students could not enjoy sports outside during the cold winters."}, {question:"What did the Japanese student do?", answer:"He played in the first basketball game and drew a picture of it."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "I'll talk about wheelchair basketball. There are two unique rules. First, there is no double dribble rule. When players have the ball in their lap, they can push their wheels only twice. After dribbling, they can push twice again. Second, there is a unique classification. Each player is given points like this illustration. The total points of the five players on the court can't be more than 14. Wheelchair basketball made me think about equity in sports. Don't you think everyone should have a chance to enjoy playing sports?",
+      textJa: "私は車いすバスケットボールについてお話しします。2つの独特なルールがあります。まず、ダブルドリブルのルールがありません。選手がひざの上にボールを置いているとき、彼らは車輪を2回だけ押すことができます。ドリブルしたあと、彼らは再び2回押すことができます。次に、独特のクラス分けがあります。それぞれの選手はこのイラストのような点数が与えられます。コート上の5人の選手の合計点数は14点より多くてはいけません。車いすバスケットボールは私にスポーツでの公平性について考えさせました。だれもがスポーツをして楽しむ機会を持つべきだと思いませんか。",
+      qa: [{question:"How many times can players push their wheels to carry the ball?", answer:"They can push only twice."}, {question:"What did wheelchair basketball make Mao think about?", answer:"It made her think about equity in sports."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中3 Program 4",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Look, Mao. They're my friends. That girl is Sophia. Which one is Sophia? She is the girl wearing a red T-shirt. Oh, what is she doing? She is asking, \"How are you?\" in sign language. I see. It must be nice to understand sign language. Absolutely. She taught me ASL. It's American Sign Language. American? I didn't know there are different kinds of sign languages. ASL is just one of them.",
+      textJa: "見て、真央。彼らはぼくの友だちだよ。あの女の子はソフィアだよ。どっちの女の子がソフィアなの？彼女は赤いTシャツを着ている女の子だよ。まあ、彼女は何をしているの？彼女は手話で「元気？」と聞いているよ。なるほど。手話を理解するのはすばらしいに違いないわ。まったくそのとおりだよ。彼女はぼくにASLを教えてくれたんだ。それはアメリカ手話のことだよ。アメリカの？異なる種類の手話があるなんて知らなかったわ。ASLはそれらの手話のうちの1つに過ぎないんだ。",
+      qa: [{question:"Who taught Daniel ASL?", answer:"Sophia did."}, {question:"Did Mao know a lot about sign languages?", answer:"No, she didn't."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "In fact, there are over 100 different sign languages in the world. In some countries, sign language is used as an official language. ASL is a sign language used widely around the world. According to a report, there are about half a million ASL users in the U.S. ASL is also used in Canada and some parts of Asia and Africa. If you know ASL, you can communicate with many people. Would you like to learn some ASL expressions?",
+      textJa: "実際は、世界には100以上の異なる手話があります。手話が公用語として使われている国もあります。ASLは世界中で広く使われている手話です。報告書によれば、アメリカには、およそ50万人のASL使用者がいます。ASLはカナダや、アジアやアフリカのいくつかの地域でも使われています。もしASLを知っていたら、あなたは多くの人々と気持ちを伝え合うことができます。ASLの表現をいくつか学んでみてはどうですか。",
+      qa: [{question:"How many sign languages are there in the world?", answer:"There are over 100 different sign languages."}, {question:"If you know ASL, what can you do?", answer:"You can communicate with many people."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "One day, I dropped by a coffee shop. I thought something was different. I didn't understand why I felt so at first. Soon I realized the staff and customers were using sign language. I was worried because I didn't know many signs. However, I was able to order a cup of coffee by pointing at the menu. Later, I learned there were other options like writing. I'm sure you can experience different types of communication at the shop. Why don't you go there?",
+      textJa: "ある日、私はコーヒーショップに立ち寄りました。何かが違うと思いました。はじめは、なぜそのように感じるのかわかりませんでした。すぐに、スタッフとお客さんが手話を使っているのだとわかりました。私は手話をあまり知らなかったので、心配でした。しかし、メニューを指さすことでコーヒーを1杯注文することができました。あとで、筆談などのほかの選択肢もあるということがわかりました。きっとその店では異なる種類のコミュニケーションを経験できると思います。そこに行ってみてはどうですか。",
+      qa: [{question:"Why was Mao worried before she ordered?", answer:"Because she didn't know many signs."}, {question:"How did Mao order a cup of coffee?", answer:"She ordered by pointing at the menu."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中3 Program 5",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "I've found a good topic for our speech. It's the history of chocolate. Sounds interesting! There are many students who love chocolate in our class. According to a website, the original chocolate was just a bitter drink. Really? A bitter drink? Yes. In the old times in Mexico, it was made from crushed cacao beans and spices. It had no sugar. People regarded it as medicine. I didn't know that. Chocolate was so valuable that only a limited number of people could have it.",
+      textJa: "私たちのスピーチのためのいい話題を見つけたわ。チョコレートの歴史よ。おもしろそうだね！ぼくたちのクラスには、チョコレートが大好きな生徒がたくさんいるよ。あるウェブサイトによれば、最初のチョコレートはただの苦い飲み物だったの。苦い飲み物ですか？ほんとうに？うん。メキシコでは昔、それは押しつぶされたカカオ豆と香辛料でできていたの。砂糖は少しも入っていなかった。それを薬だとみなしていたのよ。それは知らなかったよ。チョコレートはとても高価だったから、限られた人々しか飲めなかったのね。",
+      qa: [{question:"How did the original chocolate taste?", answer:"It tasted bitter."}, {question:"Could all people enjoy chocolate in the old times?", answer:"No, they couldn't. Only a limited number of people could have it."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "How did chocolate become popular? Cacao beans were shipped to Europe by the Spanish in the 16th century. After that, Europeans began to drink their chocolate with sugar. The world's first solid chocolate was made in 1847 by a British man. However, it was still bitter. Then a Swiss man and his friend added milk to improve its taste. This is called \"milk chocolate\" today. Chocolate is enjoyed throughout the world now. Look at this graph. Let's check the countries which consume a lot of chocolate.",
+      textJa: "どのようにしてチョコレートは人気が出たのでしょうか。カカオ豆は、16世紀にスペイン人によって船でヨーロッパに運ばれました。そのあとで、ヨーロッパの人々は砂糖入りのチョコレートを飲み始めたのです。世界で最初の固形のチョコレートは、イギリス人の男性によって1847年に作られました。しかし、それはまだ苦いものでした。その後、スイス人の男性とその友人が、チョコレートの味を改良するために牛乳を加えました。これは今日では「ミルクチョコレート」と呼ばれています。今では、チョコレートは世界中で楽しまれています。このグラフを見てください。たくさんのチョコレートを消費する国々を調べてみましょう。",
+      qa: [{question:"Who introduced cacao beans to Europe?", answer:"The Spanish did."}, {question:"What did a Swiss man and his friend add to chocolate?", answer:"They added milk."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "Behind its popular image, chocolate has a dark side to its history. Cacao beans are often sold at an extremely low price, sometimes unfairly low. So cacao farm workers are very poor. Many of their children are forced to work on cacao farms. They always see cacao, but some of them have never seen chocolate. Some people started a movement to improve farmers' lives. They buy cacao beans at a fair price and sell \"fair trade\" chocolate. If you want to buy one, look for chocolate that has this mark on its package.",
+      textJa: "人気がある印象の背後に、チョコレートにはその歴史に暗い面があります。カカオ豆はしばしば非常に低い価格で、時には不当に低く売られることもあります。そのためカカオ農場の労働者たちはとても貧しいのです。彼らの子どもたちの多くはカカオ農場で働くことを強いられています。彼らはいつもカカオを目にしていますが、しかし彼らのうちの何人かはチョコレートを一度も見たことがありません。農家の人々の生活を改善するための運動を始めた人々もいます。彼らはカカオ豆を公正な価格で買い、「フェアトレード」のチョコレートを売ります。もしあなたがそれを買いたいなら、包装にこのマークがあるチョコレートを探してください。",
+      qa: [{question:"Why are cacao farm workers often poor?", answer:"Because cacao beans are often sold at an extremely low price."}, {question:"How can we help the farmers improve their lives?", answer:"By buying chocolate that has the \"fair trade\" mark on its package."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中1 Program 1",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Hi, I'm Mao. Nice to meet you. I'm Daniel. Nice to meet you too. I'm in 1-B. Me too. I'm from New York. I'm from Saitama City. Oh, you're not from this city. You're just like me.",
+      textJa: "こんにちは、私は真央です。お会いできてうれしいです。ぼくはダニエルです。こちらこそお会いできてうれしいです。私は1年B組です。ぼくもです。ぼくはニューヨークの出身です。私はさいたま市の出身です。ああ、あなたはこの市の出身ではないのですね。まさにぼくみたいですね。",
+      qa: [],
+      trueFalse: [{statement:"I'm Mao. I'm in 1-B.", answer:true, explanation:""}, {statement:"I'm Daniel. I'm from Saitama City.", answer:false, explanation:"Daniel is from New York."}]
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Are you a new student? Yes, I am. I'm Emily. I'm in 1-B. I'm Ken. You are in my class! Oh, really? Great. I want to go to the gym. I see. Let's go together. Thanks. No problem. Where are you from? I'm from Australia.",
+      textJa: "あなたは新入生ですか。はい、そうです。私はエミリーです。私は1年B組です。ぼくは健です。あなたはぼくのクラスですよ！まあ、ほんとうですか。すばらしいです。私は体育館に行きたいです。わかりました。いっしょに行きましょう。ありがとう。どういたしまして。あなたはどこの出身ですか。私はオーストラリアの出身です。",
+      qa: [{question:"Are you in 1-A?", answer:"No, I'm not."}, {question:"Are you from Australia?", answer:"Yes, I am."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中1 Program 2",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "I draw pictures every day. Every day! I don't draw pictures. Really? Look at my notebooks! Wow, flip books! You're a great artist. Oh, thank you. I like your flip books.",
+      textJa: "私は毎日絵を描くのよ。毎日！ぼくは絵は描かないんだ。ほんとうに？私のノートを見て！うわー、パラパラマンガだ！きみはすばらしい芸術家だね。まあ、ありがとう。ぼくはきみのパラパラマンガが気に入ったよ。",
+      qa: [{question:"Do you draw pictures every day, Mao?", answer:"Yes, I do."}, {question:"Do you draw pictures, Daniel?", answer:"No, I don't."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Anya, I have a question for you. Sure. Do you like baseball? Yes, I do. I like badminton too. When do you play badminton? During lunch break. Let's play together tomorrow. Yes, let's.",
+      textJa: "アーニャ、きみに質問があるんだ。いいわよ。きみは野球が好きなの？ええ、好きよ。私はバドミントンも好きなの。いつバドミントンをするの？お昼休みの間よ。明日、いっしょにしようよ。ええ、そうしましょう。",
+      qa: [{question:"Do you like baseball?", answer:"Yes, I do."}, {question:"When do you play badminton?", answer:"During lunch break."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中1 Program 3",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Let's have a talent show. Great! I can play the guitar. I can't play the guitar. But you can sing well. Wonderful. You can perform together. Emily, let's choose a song. OK. I'm so excited! Good luck!",
+      textJa: "タレントショーをしましょう。すばらしいです！私はギターをひけるわよ。ぼくはギターはひけないよ。でもあなたはじょうずに歌えるわ。すばらしいですね。あなたたちはいっしょに演奏できますね。エミリー、歌を選ぼうよ。いいわよ。とてもわくわくするわ。幸運を祈っています！",
+      qa: [],
+      trueFalse: [{statement:"Emily can play the guitar.", answer:true, explanation:""}, {statement:"Ken can't sing well.", answer:false, explanation:"Emily says he can sing well."}]
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "I often watch talent shows on the internet. Me too. Do you know the Japanese dancer, EBIKEN? Yes, I do. I want to dance like EBIKEN. Can you dance? Yes, I can. Let's dance at our talent show. What can you do? I can do the bon dance.",
+      textJa: "ぼくはよくインターネットでタレントショーを見るんだ。私もよ。日本人ダンサーのエビケンを知っている？ええ、知っているわよ。私はエビケンのように踊りたいわ。きみは踊れるの？ええ、踊れるわよ。ぼくたちのタレントショーで踊ろうよ。何ができるの？盆踊りができるわ。",
+      qa: [{question:"What do you often watch on the internet, Daniel?", answer:"I often watch talent shows on the internet."}, {question:"Do you know EBIKEN, Mao?", answer:"Yes, I do."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中1 Program 4",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Lunch is ready. Thank you. Is this udon? Yes, it's kitsune udon. Kitsune? I don't eat fox meat. Ha-ha. Don't worry. This is deep-fried tofu. In Japanese legend, it's the favorite food of foxes. Oh, I see. So this is kitsune udon. Yes. Let's eat.",
+      textJa: "昼食の準備ができたわよ。ありがとう。これはうどん？そう、きつねうどんよ。キツネ？ぼくはキツネの肉は食べないよ。あはは。心配しないで。これはたっぷりの油で揚げた豆腐なの。日本の伝説では、キツネの大好きな食べ物なのよ。ああ、なるほど。だからこれはきつねうどんなんだね。そうよ。食べましょう。",
+      qa: [],
+      trueFalse: [{statement:"Fox meat is in kitsune udon.", answer:false, explanation:"It's deep-fried tofu, not fox meat."}]
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Would you like some tea? Thank you. Who's this lady? She's my sister Aki. She's a chef in Texas. Wow, cool! She's good at cooking Japanese dishes. Her chawan-mushi is excellent. Chawan-mushi? What is it? It's a Japanese traditional dish. You make it just like custard pudding. Is chawan-mushi sweet? No, but it's delicious.",
+      textJa: "お茶はどう？ありがとうございます。この女の人はだれですか。彼女は私の姉の亜紀よ。テキサスでシェフをしているの。うわー、かっこいい！彼女は料理するのがじょうずなの、日本料理を。彼女の茶わんむしはすばらしいのよ。茶わんむし？それは何ですか。日本の伝統的な料理よ。ちょうどカスタードプリンのように作るの。茶わんむしは甘いですか。いいえ、でもとてもおいしいのよ。",
+      qa: [{question:"What is chawan-mushi?", answer:"It's a Japanese traditional dish."}],
+      trueFalse: [{statement:"Aki is in Japan.", answer:false, explanation:"She's a chef in Texas."}]
+    },
+  ]
+},
+{
+  label: "中1 Program 5",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "This is my cousin Jenny. She lives in New York. Oh! She's in pajamas at school, right? Yes. She doesn't like her school uniform. Really? Ha-ha. Just kidding. This is a photo of Pajama Day. Pajama Day? Is that common in the U.S.? Yes. Students and teachers spend the day in pajamas. That's funny!",
+      textJa: "これはぼくのいとこのジェニーだよ。彼女はニューヨークに住んでいるんだ。まあ！彼女は学校でパジャマを着ているのね、そうですね。そうだよ。彼女は学校の制服が好きじゃないんだ。ほんとうに？あはは。冗談だよ。これはパジャマデーの写真なんだ。パジャマデー？それはアメリカではふつうなの？うん。生徒たちと先生たちはパジャマでその日を過ごすんだ。それはおもしろいわね！",
+      qa: [{question:"Is Pajama Day common in the U.S.?", answer:"Yes, it is."}, {question:"Is Jenny in pajamas at school every day?", answer:"No, she isn't."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Is Pajama Day only for schools? No. Some companies have Pajama Day too. My uncle often talks about it. Does he work in pajamas all day? Yes, he does. He's proud of that. What do you mean? Some people join Pajama Day for charity. They support sick children in hospitals. That's wonderful!",
+      textJa: "パジャマデーは学校向けだけなの？ううん。パジャマデーがある会社もあるよ。ぼくのおじはそれについてよく話しているよ。おじさんは一日中パジャマを着て働くの？うん、そうだよ。おじはそれを誇りに思っているんだ。どういう意味？チャリティーのためにパジャマデーに参加する人もいるんだよ。彼らは病院にいる病気の子どもたちを支援するんだ。それはすばらしいわね！",
+      qa: [{question:"What do sick children in hospitals get from Pajama Day?", answer:"Support from people who join Pajama Day for charity."}],
+      trueFalse: [{statement:"Pajama Day is only for schools.", answer:false, explanation:""}, {statement:"Daniel's uncle likes Pajama Day.", answer:true, explanation:""}]
+    },
+  ]
+},
+{
+  label: "中2 Program 1",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "We're in the same class again. That's great. Yeah! By the way, do you have any plans for next Saturday? Nothing special. What's up? Miki is going to move to Canada. You're kidding! When is she going to leave? Next month. I'm planning a farewell party for her. Can you come? Sure. Let's plan it together.",
+      textJa: "ぼくたちはまた同じクラスだね。すばらしいね。うん。ところで、次の土曜日は何か予定はある？特にないよ。どうしたの？美希がカナダに引っ越すのよ。まさか！いつ出発するの？来月よ。私は彼女のお別れ会を計画しているの。来てもらえる？もちろんだよ。いっしょに計画しよう。",
+      qa: [{question:"Where is Miki going to move?", answer:"She is going to move to Canada."}, {question:"What is Mao planning for Miki?", answer:"She is planning a farewell party for Miki."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Miki, it's still cold in Canada now. Take care. Thanks, Daniel. Are you going to go to a local school? Yes. I'm a bit worried. Don't worry. You'll make new friends soon. I hope so. I won't forget you all. We won't forget you either. Keep in touch. Of course. I'll text you often.",
+      textJa: "美希、今はまだカナダは寒いよ。気をつけてね。ありがとう、ダニエル。きみは現地の学校に通う予定なの？うん。少し心配なの。心配しないで。あなたはすぐに新しい友だちができるよ。そうだといいけど。私はみんなのこと忘れないわ。ぼくたちもきみのこと忘れないよ。連絡をとり続けようね。もちろん。メールをしょっちゅう送るわね。",
+      qa: [{question:"Is Miki going to go to a Japanese school?", answer:"No, she isn't. She is going to go to a local school."}, {question:"Will Miki often text Daniel?", answer:"Yes, she will."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "Hi! Thanks for having the party for me. You're welcome! It was so much fun. I enjoyed listening to your beautiful songs. I almost cried. Thanks! This will be my first long stay overseas. I'll do my best! Good luck. Say goodbye to everyone for me. OK! Sure. I'll miss you. CU! Thank you!",
+      textJa: "こんにちは！パーティーを開いてくれてありがとう。どういたしまして！とても楽しかったよ。あなたたちのすばらしい歌を聞くことをとても楽しみました。ほとんど泣きそうでした。ありがとう。これは私の初めての海外での長い滞在になるでしょう。ベストをつくすつもりよ！幸運を祈ります。みんなにさようならと伝えてね。いいわよ。わかりました。きみがいなくてさびしくなるよ。じゃあ、またね！ありがとう！",
+      qa: [{question:"Did Daniel sing at the party?", answer:"Yes, he did."}, {question:"Will Daniel miss Miki?", answer:"Yes, he will."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中2 Program 2",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "I watched an interesting TV program yesterday. What was it about? It was about the Koshien project in Africa. Koshien? I don't think baseball is popular in Africa. A Japanese man is promoting baseball there. His name is Tomonari Shinya. Is he successful? I think so. For example, in Tanzania, a \"Koshien\" championship took place. Wow, I think Mr. Tomonari is a passionate person. Did Mr. Tomonari play baseball professionally? No, but he loves baseball. He played it from elementary school to university. When he worked in Ghana, he coached the national team. Then he did the same in Tanzania. Exactly.",
+      textJa: "ぼくは昨日、興味深いテレビ番組を見たよ。それは何についてのものだったの？それはアフリカの甲子園プロジェクトについてのものだったんだ。甲子園？私はアフリカでは野球は人気がないと思うわ。ある日本人の男性がそこで野球を広めているんだ。彼の名前は友成晋也です。彼は成功しましたか。私はそう思います。たとえば、タンザニアでは、「甲子園」選手権大会が開催されたよ。うわー、私は友成さんは情熱的な人なんだと思うわ。友成さんはプロとして野球をしたの？いいえ、でも彼は野球を愛しているのよ。彼は小学校から大学まで野球をしていたんだ。彼はガーナで働いていたとき、代表チームを指導したんだ。それならそれと同じことをタンザニアでしたんだよ。まったくそのとおりです。",
+      qa: [{question:"Did Anya know about the Koshien project in Africa?", answer:"No, she didn't."}, {question:"Who is promoting baseball in Africa?", answer:"Mr. Tomonari Shinya is."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Did he work in any other countries too? Awesome! Did he teach baseball there too, in South Sudan? Yes. He believes baseball can create peace.",
+      textJa: "彼はいくつかのほかの国々でも働いたの？すばらしい！彼は南スーダンでもそこで野球を教えましたか。はい、南スーダンで。彼は野球が平和を作り出すことができると信じています。",
+      qa: [{question:"Did Mr. Tomonari play baseball professionally?", answer:"No, he didn't."}, {question:"What does Mr. Tomonari believe?", answer:"He believes baseball can create peace."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "What are the goals of the Koshien project in Africa? One of them is education. Mr. Tomonari wants to foster sportsmanship in young people through baseball. In fact, he promotes baseball as a good tool for education. If children learn baseball, they will learn good manners too. He speaks at schools in Africa, and many of the students are experiencing the positive effects of baseball. Mr. Tomonari believes in the power of baseball. The project is still growing.",
+      textJa: "友成さんが野球を通じてしたいことは何でしょうか。それらのうちの1つは教育です。友成さんは野球を通じて、若い人々にスポーツマンシップを育てたいと思っています。実のところ、彼は教育のためのよい道具として野球を促進しています。もし子どもたちが野球を習えば、彼らにはよいマナーも身につくでしょう。彼はアフリカの学校で話し、生徒たちの多くは野球のよい効果を経験しています。友成さんは野球の力を信じています。そのプロジェクトは今なお拡大中です。",
+      qa: [{question:"What is one of the goals of the Koshien project?", answer:"It is education."}, {question:"What will children learn if they learn baseball?", answer:"They will learn good manners."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中2 Program 3",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Wow, there are so many food stands here. Yes. I want to eat an \"American dog.\" An \"American dog\"? Ah, you mean a corn dog! A corn dog! I see. What do you want to have? I want to have something sweet. How about wata-ame? Sounds good! It's cotton candy in English. It's from the U.S. Is it? I didn't know that.",
+      textJa: "うわー、とてもたくさんの食べ物の屋台がここにあるね。そうね。「アメリカンドッグ」が食べたいな。「アメリカンドッグ」って？ああ、corndogのことだね！corndogって言うのね！なるほど。あなたは何が食べたい？ぼくは何か甘いものが食べたいな。綿あめはどう？よさそうだね！英語ではcottoncandyだよ。アメリカ生まれなんだ。そうなの？知らなかったわ。",
+      qa: [{question:"What is an \"American dog\" in English?", answer:"It is a corn dog."}, {question:"Where is wata-ame from?", answer:"It is from the U.S."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Do you have any food stands in the U.S.? Well, we have lemonade stands in summer. Lemonade stands? Yes. Children make lemonade by themselves. Then they sell it to earn money. Did you make and sell it too? Yes. I opened a lemonade stand in front of my house. What did you buy with the money? I bought a basketball. Can I make lemonade for you sometime soon? Yes, please! I'm looking forward to it.",
+      textJa: "アメリカには食べ物の屋台はある？えーと、夏にレモネードスタンドがあるよ。レモネードスタンド？うん。子どもたちが自力でレモネードを作るんだ。そして、お金をかせぐためにそれを売るんだよ。あなたもそれを作って売ったの？うん。ぼくの家の前でレモネードスタンドを開いたよ。そのお金で何を買ったの？バスケットボールのボールを買ったよ。そのうちすぐ、きみのためにレモネードを作ってもいい？うん、お願い！楽しみに待っているわ。",
+      qa: [{question:"Where did Daniel open his lemonade stand?", answer:"He opened it in front of his house."}, {question:"Does Mao want to drink lemonade?", answer:"Yes, she does."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "Today, I'll talk about a traditional Dutch food. I have some pictures to show you. Look at these. This food looks like sashimi. Some people use toothpicks to eat it. Others enjoy it in \"the Dutch way.\" You can buy it at food stands in the Netherlands. Around the world there are many kinds of street food to try. I think street food shows each country's food culture.",
+      textJa: "今日は、私は伝統的なオランダの食べ物についてお話ししようと思います。私はみなさんに見せる写真を数枚持っています。これらを見てください。この食べ物は刺し身のように見えます。それを食べるのにつまようじを使う人もいます。「オランダ式」でそれを楽しむ人もいます。オランダの食べ物の屋台でそれを買うことができます。世界中には、食べてみるべきたくさんの種類の屋台の食べ物があります。私は、屋台の食べ物はそれぞれの国の食文化を示していると思います。",
+      qa: [{question:"Where can we buy the traditional Dutch food?", answer:"We can buy it at food stands in the Netherlands."}, {question:"What does Mao think about street food?", answer:"She thinks it shows each country's food culture."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中2 Program 4",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "Hi, Miki. How's it going? Fine, thanks. I hear you like hiking. Is that true? Yes. I often went hiking when I was in Japan. I'm glad to hear that. Why don't we go hiking next Saturday? My uncle Eric will guide us. That sounds wonderful. Where will we meet? Can you come to my house at six in the morning? Sure. I hope it'll be clear on that day.",
+      textJa: "やあ、美希。調子はどう？元気よ、ありがとう。きみはハイキングが好きらしいね。それってほんとう？そうよ。日本にいたときはよくハイキングに行ったわ。それを聞いてうれしいよ。今度の土曜日にハイキングに行かないかい？ぼくのおじのエリックがぼくたちを案内してくれるよ。それはすばらしそうね。どこで会う？ぼくの家に朝6時に来てもらえる？いいわよ。その日はよく晴れるといいわね。",
+      qa: [{question:"What will Miki do next Saturday?", answer:"She will go hiking."}, {question:"Who will guide Tom and Miki?", answer:"Tom's uncle Eric will."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "What a breathtaking place! I'm so excited to be here. Wait. First of all, let's check the hiking rules. \"Take only pictures, leave only footprints,\" right? Yes. We can take pictures, but we must not take anything from the forest. And we must bring our garbage back home. Yeah. We must protect nature. Now, let's go. If you have any trouble, tell me.",
+      textJa: "なんてすごい場所なの！ここにいられてとてもわくわくするわ。待って。何よりもまず、ハイキングのルールを確認しよう。「とっていいのは写真だけ、残していいのは足跡だけ。」そうでしょう？うん。写真は撮っていいけど、森からは何も取ってはいけないよ。それからごみは家に持ち帰らないといけないね。うん。自然を守らなくちゃね。さあ、行こう。何か困ったことがあれば、ぼくに教えてね。",
+      qa: [{question:"What does \"leave only footprints\" mean?", answer:"It means we must bring our garbage back home."}, {question:"Does Miki love nature?", answer:"Yes, she does."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "How terrible! Who cut down this tree? You don't have to worry. I think a beaver did it. You know a lot about beavers? Yes. They're one of Canada's national animals. Are they? They build dams and lodges, right? Exactly. They're great engineers. Do you think we'll see any beavers today? I don't think so. They sleep in their lodges during the day. Then we have to be quiet.",
+      textJa: "なんてひどいの！だれがこの木を切り倒したの？あなたは心配する必要はないよ。ビーバーがやったんだと思うよ。ビーバーについてたくさん知っているの？うん。ビーバーはカナダの国獣の1つだよ。そうなの？ビーバーはダムや巣を作るんでしょう？まったくそのとおりだよ。ビーバーはすごい技術者なんだよ。私たちは今日ビーバーを見られると思う？見られないと思うな。日中は巣で寝ているんだよ。それなら静かにしなくちゃね。",
+      qa: [{question:"What do beavers build?", answer:"They build dams and lodges."}, {question:"Will Miki and Tom see beavers?", answer:"No, they won't."}],
+      trueFalse: []
+    },
+  ]
+},
+{
+  label: "中2 Program 5",
+  parts: [
+    {
+      partLabel: "Part 1",
+      textEn: "How was your work experience? It was a bit tough, but I had a very good time. The staff members treated me very kindly. Good for you. So what did you do? I placed goods on the shelves. I learned how to do it well. But I dropped a pack of eggs on the floor by mistake. Oh, no! No one blamed me, but I couldn't forget about it all day. It's OK. We all make mistakes.",
+      textJa: "あなたの職場体験はどうだったの？少しつらかったけど、とても楽しかったよ。スタッフの人たちはぼくにとても親切にしてくれたよ。よかったわね。それで、何をしたの？商品をたなに置いたよ。ぼくはそれをじょうずにする方法を学んだんだ。でも、誤って卵のパックを床に落としちゃったんだ。あら、まあ！だれもぼくを責めなかったけど、一日中、そのことが忘れられなかったよ。だいじょうぶよ。みんな間違いをするもの。",
+      qa: [{question:"Were the staff members kind to Daniel?", answer:"Yes, they were."}, {question:"What did Daniel drop by mistake?", answer:"He dropped a pack of eggs."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 2",
+      textEn: "Mao, where did you work? At a hospital. Everything was new to me. What do you remember in particular? Well, I saw an old man in the waiting room. He looked lonely. So I decided to speak to him. You spoke to him? What did you talk about? I just tried to be a good listener. He looked very happy while we were talking. You did a good job. Thanks. I learned that taking action was important.",
+      textJa: "真央、きみはどこで働いたの？病院よ。すべてのことが私には初めてだったわ。特に何を覚えているの？えーと、待合室で年配の男性を見かけたの。さびしそうだったわ。だから彼に話しかけてみることにしたの。話しかけたの？何を話したの？ただよい聞き手になろうとしたの。私たちが話している間、彼はとてもうれしそうだったわ。よくやったね。ありがとう。行動を起こすことが大切なんだって学んだわ。",
+      qa: [{question:"Why did Mao speak to the old man?", answer:"Because he looked lonely."}, {question:"Did the old man enjoy talking with Mao?", answer:"Yes, he did."}],
+      trueFalse: []
+    },
+    {
+      partLabel: "Part 3",
+      textEn: "I worked at a nursery school. I took the children for a walk in the morning. After that, we enjoyed lunch together. In the afternoon, they had a nap. When a boy didn't want to sleep, I stayed beside him. After a while, he fell asleep. On the last day, the children gave me thank-you cards. I was very happy to get them. This work experience taught me the importance of working for others. I want to make use of this experience in my future life.",
+      textJa: "ぼくは保育園で働きました。午前中は子どもたちを散歩に連れて行きました。そのあとで、ぼくたちは昼食をいっしょに楽しみました。午後に、彼らは昼寝をしました。男の子が眠りたくなかったとき、ぼくは彼のそばにいました。しばらくすると彼は眠りに落ちました。最終日に、子どもたちはぼくにお礼のカードをくれました。それらをもらってぼくはとてもうれしかったです。この職場体験は、ぼくにほかの人のために働くことの大切さを教えてくれました。ぼくはこの経験を将来の人生に生かしたいと思います。",
+      qa: [{question:"What did the children give Ken?", answer:"They gave him thank-you cards."}, {question:"What did Ken learn through his work experience?", answer:"He learned the importance of working for others."}],
+      trueFalse: []
+    },
+  ]
+},
+];
+
+/* ================= app state ================= */
+const TYPES = [
+  { key:'fillBlank',  label:'穴埋め問題',       defCount:5, mode:'auto' },
+  { key:'reorder',    label:'並べ替え問題',      defCount:4, mode:'auto' },
+  { key:'qa',         label:'Q & A（本文読解）',  defCount:4, mode:'bank' },
+  { key:'trueFalse',  label:'True / False',     defCount:4, mode:'auto' },
+  { key:'toJapanese', label:'日本語訳（英→日）',  defCount:4, mode:'pair' },
+  { key:'toEnglish',  label:'英作文（日→英）',    defCount:4, mode:'pair' },
+];
+
+let state = {};
+TYPES.forEach(t => state[t.key] = { on:true, count:t.defCount });
+
+let printMode = 'itemized';
+document.getElementById('modeToggle').addEventListener('change', e=>{
+  if(e.target.name === 'printMode'){
+    printMode = e.target.value;
+    if(printMode === 'longReading' && selectedParts.size > 1){
+      const keepFirst = currentProgram().parts.find(pt => selectedParts.has(pt.partLabel));
+      selectedParts = new Set(keepFirst ? [keepFirst.partLabel] : []);
+    }
+    renderPartChecks();
+    renderTypeList();
+  }
+});
+
+let selectedGrade = null;
+let selectedProgramLabel = null;
+let selectedParts = new Set(); // partLabels currently checked
+let generatedTitle = '';
+
+const STOPWORDS = new Set(['a','an','the','is','are','was','were','am','be','been','being','to','of','in','on','at','and','but','or','this','that','these','those','it','its','he','she','they','we','you','i','my','your','his','her','their','our','not','do','does','did','has','have','had','with','for','as','by','from','so','if','than','then','there','here','what','who','when','where','why','how','all','some','no','yes','can','will','would','could','should']);
+const LOANWORDS = new Set(['bento','bentos','ekiben','ekibens','kyara-ben','kyaraben','unagi','yokan','udon','kitsune','sushi','natto','ramen','chawan-mushi','chawanmushi','chawan','mushi','ebiken','manga','kanji','anime']);
+
+function isSubstantialSentence(s){
+  return (s.match(/[A-Za-z']+/g) || []).length >= 5;
+}
+function pickBlankWord(sentence){
+  const tokens = sentence.match(/[A-Za-z']+/g) || [];
+  const candidates = tokens.filter((w, idx) => {
+    if(w.length < 4) return false;
+    const lower = w.toLowerCase();
+    if(STOPWORDS.has(lower)) return false;
+    if(LOANWORDS.has(lower)) return false;
+    const isCapitalized = /^[A-Z][a-z']*$/.test(w);
+    if(isCapitalized && idx !== 0) return false; // likely a name/place, not core vocabulary
+    return true;
+  });
+  if(!candidates.length) return null;
+  return candidates[Math.floor(Math.random()*candidates.length)];
+}
+
+function esc(s){ return (s ?? '').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pickRandom(arr,n){ return shuffle(arr).slice(0, Math.min(n, arr.length)); }
+function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function splitEnglishSentences(text){
+  return text.replace(/\s+/g,' ').split(/(?<!\bMr\.)(?<!\bMrs\.)(?<!\bMs\.)(?<!\bDr\.)(?<!\bSt\.)(?<=[.?!]|[.?!]["'\u201d\u2019])\s+(?=[A-Z0-9"'])/).map(s=>s.trim()).filter(Boolean);
+}
+function splitJapaneseSentences(text){
+  return text.replace(/\s+/g,'').split(/(?<=[。！？])(?!」)/).map(s=>s.trim()).filter(Boolean);
+}
+function pairSentences(en, ja){
+  if(!en || !ja) return [];
+  const enS = splitEnglishSentences(en);
+  const jaS = splitJapaneseSentences(ja);
+  const n = Math.min(enS.length, jaS.length);
+  const pairs = [];
+  for(let i=0;i<n;i++) pairs.push({ en: enS[i], ja: jaS[i] });
+  return pairs;
+}
+
+function gradeOf(label){ return label.split(' ')[0]; } // "中1" / "中2" / "中3"
+function programsForGrade(grade){ return PROGRAMS.filter(p => gradeOf(p.label) === grade); }
+function currentProgram(){ return PROGRAMS.find(p => p.label === selectedProgramLabel) || null; }
+function currentPassage(){
+  const prog = currentProgram();
+  if(!prog) return null;
+  const parts = prog.parts.filter(pt => selectedParts.has(pt.partLabel));
+  if(!parts.length) return null;
+  return {
+    label: prog.label,
+    textEn: parts.map(pt => pt.textEn).join(' '),
+    textJa: parts.map(pt => pt.textJa).join(''),
+    bank: {
+      qa: parts.flatMap(pt => pt.qa),
+      trueFalse: parts.flatMap(pt => pt.trueFalse)
+    }
+  };
+}
+function sentencesWithJa(textEn, textJa){
+  const enS = splitEnglishSentences(textEn);
+  const jaS = textJa ? splitJapaneseSentences(textJa) : [];
+  return enS.map((s,i) => ({ en:s, ja: jaS[i] || null }));
+}
+
+/* ---------- auto generators from English text ---------- */
+function genFillBlank(textEn, textJa, n){
+  const all = sentencesWithJa(textEn, textJa).filter(x => isSubstantialSentence(x.en));
+  const chosen = pickRandom(all, n * 3); // oversample, since some sentences yield no valid blank word
+  const results = [];
+  for(const x of chosen){
+    if(results.length >= n) break;
+    const target = pickBlankWord(x.en);
+    if(!target) continue;
+    const re = new RegExp('\\b'+escapeRegExp(target)+'\\b');
+    results.push({ sentence:x.en.replace(re,'___'), answer:target, ja:x.ja });
+  }
+  return results;
+}
+function genReorder(textEn, textJa, n){
+  const all = sentencesWithJa(textEn, textJa).filter(x => isSubstantialSentence(x.en));
+  const chosen = pickRandom(all, n);
+  return chosen.map(x => {
+    const clean = x.en.replace(/[.?!]+\s*$/,'').trim();
+    const words = clean.split(/\s+/);
+    let shuffled = shuffle(words);
+    if(words.length > 2){
+      let tries = 0;
+      while(shuffled.join(' ') === words.join(' ') && tries < 5){ shuffled = shuffle(words); tries++; }
+    }
+    return { words:shuffled, answer:x.en, ja:x.ja };
+  });
+}
+function genToJapanese(pairs, n){
+  const substantial = pairs.filter(p => isSubstantialSentence(p.en));
+  return pickRandom(substantial, n).map(p => ({ english:p.en, answer:p.ja }));
+}
+function genToEnglish(pairs, n){
+  const substantial = pairs.filter(p => isSubstantialSentence(p.en));
+  return pickRandom(substantial, n).map(p => ({ japanese:p.ja, answer:p.en }));
+}
+
+/* ---------- true/false: auto-generate by negating or altering a fact, bank items get priority ---------- */
+const NEG_MAP = {
+  "isn't":"is", "is not":"is", "aren't":"are", "are not":"are", "wasn't":"was", "was not":"was",
+  "weren't":"were", "were not":"were", "don't":"do", "do not":"do", "doesn't":"does", "does not":"does",
+  "didn't":"did", "did not":"did", "haven't":"have", "have not":"have", "hasn't":"has", "has not":"has",
+  "hadn't":"had", "had not":"had", "can't":"can", "cannot":"can", "can not":"can", "won't":"will",
+  "will not":"will", "wouldn't":"would", "would not":"would", "shouldn't":"should", "should not":"should",
+  "mustn't":"must", "must not":"must", "couldn't":"could", "could not":"could"
+};
+const POS_AUX = ["is","are","was","were","do","does","did","have","has","had","can","could","will","would","should","must"];
+
+function falsifySentence(s){
+  for(const neg in NEG_MAP){
+    const re = new RegExp('\\b'+neg.replace(/'/g, "['’]")+'\\b','i');
+    if(re.test(s)) return s.replace(re, NEG_MAP[neg]);
+  }
+  for(const aux of POS_AUX){
+    const re = new RegExp('\\b'+aux+'\\b','i');
+    if(re.test(s)) return s.replace(re, m => m + ' not');
+  }
+  const numMatch = s.match(/\d[\d,]*/);
+  if(numMatch){
+    const original = numMatch[0];
+    const num = parseInt(original.replace(/,/g,''), 10);
+    const delta = Math.max(1, Math.round(num * 0.3));
+    const newNum = (num > 5 && Math.random() < 0.5) ? num - delta : num + delta;
+    return s.replace(original, String(newNum));
+  }
+  return null;
+}
+
+function genTrueFalse(p, n){
+  const bankPicked = pickRandom(p.bank.trueFalse, n);
+  const remaining = n - bankPicked.length;
+  if(remaining <= 0) return bankPicked;
+
+  const usedStatements = new Set(bankPicked.map(x => x.statement));
+  const pool = shuffle(sentencesWithJa(p.textEn, p.textJa).filter(x => isSubstantialSentence(x.en) && !usedStatements.has(x.en)));
+  const autoItems = [];
+  for(const x of pool){
+    if(autoItems.length >= remaining) break;
+    if(Math.random() < 0.5){
+      autoItems.push({ statement:x.en, answer:true, explanation:'', ja:x.ja });
+    } else {
+      const falsified = falsifySentence(x.en);
+      if(falsified && falsified !== x.en){
+        autoItems.push({ statement:falsified, answer:false, explanation:'', ja:x.ja });
+      } else {
+        autoItems.push({ statement:x.en, answer:true, explanation:'', ja:x.ja });
+      }
+    }
+  }
+  return shuffle([...bankPicked, ...autoItems]);
+}
+
+/* ---------- long-reading (exam style) generator ---------- */
+function buildLongReading(p, blankCount, underlineCount){
+  const sentences = splitEnglishSentences(p.textEn);
+  const pairs = pairSentences(p.textEn, p.textJa);
+  const LABELS = 'abcdefghij';
+
+  const underlineCandidates = [];
+  for(let i=0;i<pairs.length;i++){
+    if(isSubstantialSentence(sentences[i])) underlineCandidates.push(i);
+  }
+  const underlineIdxs = pickRandom(underlineCandidates, underlineCount).sort((a,b)=>a-b);
+  const underlineSet = new Set(underlineIdxs);
+
+  const blankCandidates = [];
+  sentences.forEach((s,i)=>{
+    if(underlineSet.has(i)) return;
+    if(!isSubstantialSentence(s)) return;
+    if(pickBlankWord(s)) blankCandidates.push(i);
+  });
+  const blankIdxs = pickRandom(blankCandidates, blankCount).sort((a,b)=>a-b);
+  const blankSet = new Set(blankIdxs);
+
+  const blanks = [];
+  const underlines = [];
+  let blankNum = 0, labelIdx = 0;
+
+  const rendered = sentences.map((s,i)=>{
+    const safe = esc(s);
+    if(blankSet.has(i)){
+      blankNum++;
+      const target = pickBlankWord(s);
+      const re = new RegExp('\\b'+escapeRegExp(target)+'\\b');
+      blanks.push({ num:blankNum, answer:target });
+      return safe.replace(re, `<span class="blank-num">(${blankNum})_______</span>`);
+    }
+    if(underlineSet.has(i)){
+      const label = LABELS[labelIdx++];
+      underlines.push({ label, english:pairs[i].en, japanese:pairs[i].ja });
+      return `<span class="underline-seg">${safe}</span><span class="underline-label">(${label})</span>`;
+    }
+    return safe;
+  });
+
+  return { passageHtml: rendered.join(' '), blanks, underlines };
+}
+
+function longReadingSectionHTML(lr, qaItems, tfItems, withAnswer){
+  let html = `<div class="qtype-section"><h4>長文読解</h4><div class="passage-block">${lr.passageHtml}</div>`;
+  if(lr.blanks.length){
+    html += `<div class="sub-q">問1　空所(1)〜(${lr.blanks.length})に入る最も適切な語を書きなさい。</div>`;
+    html += `<div>${lr.blanks.map(b => `<span class="qitem-inline">(${b.num}) ${withAnswer ? `<span class="ans-text">${esc(b.answer)}</span>` : '<span class="answer-line" style="min-width:90px;"></span>'}</span>`).join('')}</div>`;
+  }
+  if(lr.underlines.length){
+    html += `<div class="sub-q">問2　下線部${lr.underlines.map(u=>`(${u.label})`).join('')}を日本語に訳しなさい。</div>`;
+    html += lr.underlines.map(u => `<div class="qitem"><span class="qn">(${u.label})</span><span class="qbody">${withAnswer ? `<span class="ans-text">${esc(u.japanese)}</span>` : `<div class="answer-line" style="display:block;min-width:100%;height:22px;"></div>`}</span></div>`).join('');
+  }
+  if(qaItems.length){
+    html += `<div class="sub-q">問3　次の質問に英語で答えなさい。</div>`;
+    html += qaItems.map((item,i) => questionBody('qa', item, i, withAnswer)).join('');
+  }
+  if(tfItems.length){
+    html += `<div class="sub-q">問4　本文の内容と合っていれば○、違っていれば×を書きなさい。</div>`;
+    html += tfItems.map((item,i) => questionBody('trueFalse', item, i, withAnswer)).join('');
+  }
+  html += `</div>`;
+  return html;
+}
+
+const GRADE_ORDER = ['中1','中2','中3'];
+
+/* ---------- selector rendering (grade → program → parts) ---------- */
+function renderGradeSelect(){
+  const el = document.getElementById('gradeSelect');
+  const present = new Set(PROGRAMS.map(p => gradeOf(p.label)));
+  const grades = GRADE_ORDER.filter(g => present.has(g));
+  el.innerHTML = grades.map(g => `<option value="${g}" ${g===selectedGrade?'selected':''}>${g}</option>`).join('');
+  el.addEventListener('change', e=>{
+    selectedGrade = e.target.value;
+    const first = programsForGrade(selectedGrade)[0];
+    selectedProgramLabel = first ? first.label : null;
+    renderProgramSelect();
+    onProgramChange();
+  });
+}
+function renderProgramSelect(){
+  const el = document.getElementById('programSelect');
+  const progs = programsForGrade(selectedGrade);
+  el.innerHTML = progs.map(p => `<option value="${esc(p.label)}" ${p.label===selectedProgramLabel?'selected':''}>${esc(p.label.replace(selectedGrade+' ',''))}</option>`).join('');
+  el.addEventListener('change', e=>{
+    selectedProgramLabel = e.target.value;
+    onProgramChange();
+  });
+}
+function onProgramChange(){
+  const prog = currentProgram();
+  if(printMode === 'longReading'){
+    selectedParts = new Set(prog && prog.parts[0] ? [prog.parts[0].partLabel] : []);
+  } else {
+    selectedParts = new Set(prog ? prog.parts.map(pt => pt.partLabel) : []);
+  }
+  renderPartChecks();
+  renderTypeList();
+}
+function renderPartChecks(){
+  const el = document.getElementById('partChecks');
+  const prog = currentProgram();
+  if(!prog){ el.innerHTML = ''; return; }
+  const isSingle = printMode === 'longReading';
+  el.innerHTML = prog.parts.map(pt => `
+    <div class="part-check-row">
+      <label>
+        <input type="${isSingle?'radio':'checkbox'}" name="${isSingle?'partSelectRadio':''}" class="part-check" value="${esc(pt.partLabel)}" ${selectedParts.has(pt.partLabel)?'checked':''}>
+        ${esc(pt.partLabel)}
+      </label>
+      <div class="p-badges">
+        ${pt.textJa ? '<span class="badge has-ja">和訳あり</span>' : ''}
+        ${(pt.qa.length || pt.trueFalse.length) ? `<span class="badge">Q&amp;A${pt.qa.length + pt.trueFalse.length}</span>` : ''}
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('.part-check').forEach(cb=>{
+    cb.addEventListener('change', e=>{
+      if(isSingle){
+        selectedParts = new Set(e.target.checked ? [e.target.value] : []);
+      } else if(e.target.checked){
+        selectedParts.add(e.target.value);
+      } else {
+        selectedParts.delete(e.target.value);
+      }
+      renderTypeList();
+    });
+  });
+}
+
+/* ---------- type list ---------- */
+function availableCount(t){
+  const p = currentPassage();
+  if(!p) return 0;
+  if(t.key === 'fillBlank') return splitEnglishSentences(p.textEn).filter(s => isSubstantialSentence(s) && pickBlankWord(s)).length;
+  if(t.key === 'reorder') return splitEnglishSentences(p.textEn).filter(isSubstantialSentence).length;
+  if(t.key === 'trueFalse') return splitEnglishSentences(p.textEn).filter(isSubstantialSentence).length + p.bank.trueFalse.length;
+  if(t.mode === 'pair') return pairSentences(p.textEn, p.textJa).filter(x => isSubstantialSentence(x.en)).length;
+  return p.bank[t.key].length;
+}
+function renderTypeList(){
+  const el = document.getElementById('typeList');
+  const disabledInLongReading = new Set(['reorder','toEnglish']);
+  el.innerHTML = TYPES.map(t => {
+    const isDisabled = printMode === 'longReading' && disabledInLongReading.has(t.key);
+    return `
+    <div class="type-row ${isDisabled ? 'disabled':''}">
+      <label class="tname"><input type="checkbox" data-key="${t.key}" class="type-toggle" ${state[t.key].on?'checked':''} ${isDisabled?'disabled':''}>${t.label}</label>
+      <div class="count">
+        <span class="avail">/ ${availableCount(t)}件</span>
+        <button type="button" class="count-dec" data-key="${t.key}" ${isDisabled?'disabled':''}>−</button>
+        <span id="count-${t.key}">${state[t.key].count}</span>
+        <button type="button" class="count-inc" data-key="${t.key}" ${isDisabled?'disabled':''}>＋</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.querySelectorAll('.type-toggle').forEach(cb=>{
+    cb.addEventListener('change', e=>{ state[e.target.dataset.key].on = e.target.checked; });
+  });
+  document.querySelectorAll('.count-dec').forEach(b=>{
+    b.addEventListener('click', ()=>{ const k=b.dataset.key; state[k].count=Math.max(1,state[k].count-1); document.getElementById('count-'+k).textContent=state[k].count; });
+  });
+  document.querySelectorAll('.count-inc').forEach(b=>{
+    b.addEventListener('click', ()=>{ const k=b.dataset.key; state[k].count=Math.min(15,state[k].count+1); document.getElementById('count-'+k).textContent=state[k].count; });
+  });
+}
+
+/* ---------- worksheet rendering ---------- */
+const TYPE_LABEL = {
+  fillBlank:'穴埋め問題', reorder:'並べ替え問題', qa:'Q & A（本文読解）',
+  trueFalse:'True / False', toJapanese:'日本語訳（英→日）', toEnglish:'英作文（日→英）'
+};
+function questionBody(key, item, i, withAnswer){
+  if(key === 'fillBlank') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody">${esc(item.sentence)}${item.ja?`<div class="ja-hint">${esc(item.ja)}</div>`:''}${withAnswer?`<span class="ans-text"> → ${esc(item.answer)}</span>`:''}</span></div>`;
+  if(key === 'reorder') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody"><div class="reorder-words">${(item.words||[]).map(w=>`<span>${esc(w)}</span>`).join('')}</div>${item.ja?`<div class="ja-hint">${esc(item.ja)}</div>`:''}${withAnswer?`<div class="ans-text" style="margin-top:6px;">→ ${esc(item.answer)}</div>`:`<div class="answer-line" style="display:block;min-width:100%;height:1px;margin:10px 0 0;"></div>`}</span></div>`;
+  if(key === 'qa') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody">${esc(item.question)}${withAnswer?`<div class="ans-text" style="margin-top:4px;">→ ${esc(item.answer)}</div>`:`<div class="answer-line" style="display:block;min-width:100%;height:22px;margin-top:4px;"></div>`}</span></div>`;
+  if(key === 'trueFalse') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody">${esc(item.statement)}${item.ja?`<div class="ja-hint">${esc(item.ja)}</div>`:''}<span class="tf-choice"><span>T</span><span>F</span></span>${withAnswer?`<div class="ans-text" style="margin-top:4px;">→ ${item.answer?'True':'False'}${item.explanation?'（'+esc(item.explanation)+'）':''}</div>`:''}</span></div>`;
+  if(key === 'toJapanese') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody">${esc(item.english)}${withAnswer?`<div class="ans-text" style="margin-top:4px;">→ ${esc(item.answer)}</div>`:`<div class="answer-line" style="display:block;min-width:100%;height:22px;margin-top:4px;"></div>`}</span></div>`;
+  if(key === 'toEnglish') return `<div class="qitem"><span class="qn">${i+1}.</span><span class="qbody">${esc(item.japanese)}${withAnswer?`<div class="ans-text" style="margin-top:4px;">→ ${esc(item.answer)}</div>`:`<div class="answer-line" style="display:block;min-width:100%;height:22px;margin-top:4px;"></div>`}</span></div>`;
+  return '';
+}
+function sheetHTML(data, title, withAnswer){
+  const sections = data.longReading
+    ? longReadingSectionHTML(data.longReading, data.longReadingQA || [], data.longReadingTF || [], withAnswer)
+    : Object.keys(TYPE_LABEL).filter(k => Array.isArray(data[k]) && data[k].length).map(k => `
+    <div class="qtype-section"><h4>${TYPE_LABEL[k]}</h4>${data[k].map((item,i)=>questionBody(k,item,i,withAnswer)).join('')}</div>`).join('');
+  return `
+    <div class="sheet ${withAnswer ? 'answer-key' : ''}">
+      <div class="sheet-header">
+        <div class="title-area"><div class="kicker">${withAnswer?'ANSWER KEY / 解答':'TEST PREP PRINT'}</div><h3>${esc(title)}</h3></div>
+        <div class="idbox">
+          <div class="cell"><div class="lbl">組</div></div><div class="cell"><div class="lbl">番</div></div><div class="cell"><div class="lbl">点数</div></div>
+          <div class="cell" style="grid-column:span 2;"><div class="lbl">氏名</div></div><div class="cell"><div class="lbl">/100</div></div>
+        </div>
+      </div>
+      ${sections}
+    </div>`;
+}
+function renderSheet(data, title){
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `
+    <div class="toolbar no-print">
+      <div class="toggles">
+        <label><input type="radio" name="ansMode" value="hidden" checked> 問題のみ（解答なし）</label>
+        <label><input type="radio" name="ansMode" value="inline"> 解答も一緒に表示</label>
+        <label><input type="radio" name="ansMode" value="separate"> 解答は別紙（2枚目）</label>
+      </div>
+      <button class="print-btn" id="printBtn">🖨 印刷する</button>
+    </div>
+    <div id="mainSheetWrap">${sheetHTML(data, title, false)}</div>
+    <div id="answerSheetWrap"></div>
+    <footer class="credit no-print">配点や表現は印刷前に一度確認してください。</footer>`;
+  document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+  document.querySelectorAll('input[name=ansMode]').forEach(r=>{
+    r.addEventListener('change', e=>{
+      const mode = e.target.value;
+      document.getElementById('mainSheetWrap').innerHTML = sheetHTML(data, title, mode === 'inline');
+      document.getElementById('answerSheetWrap').innerHTML = mode === 'separate' ? sheetHTML(data, title, true) : '';
+    });
+  });
+}
+
+/* ---------- generate ---------- */
+document.getElementById('genBtn').addEventListener('click', ()=>{
+  const p = currentPassage();
+  const errBox = document.getElementById('errBox');
+  errBox.innerHTML = '';
+  if(!p){ errBox.innerHTML = '<div class="err">Partを1つ以上選んでください。</div>'; return; }
+
+  if(printMode === 'longReading'){
+    const blankN = state.fillBlank.on ? state.fillBlank.count : 0;
+    const underlineN = state.toJapanese.on ? state.toJapanese.count : 0;
+    const qaN = state.qa.on ? state.qa.count : 0;
+    const tfN = state.trueFalse.on ? state.trueFalse.count : 0;
+    if(blankN === 0 && underlineN === 0 && qaN === 0 && tfN === 0){
+      errBox.innerHTML = '<div class="err">出題する項目を1つ以上ONにしてください。</div>';
+      return;
+    }
+    if(underlineN > 0 && !p.textJa){
+      errBox.innerHTML = '<div class="err">下線部訳を出すには、このProgramに日本語訳を登録してください。</div>';
+      return;
+    }
+    const longReading = buildLongReading(p, blankN, underlineN);
+    const data = {
+      longReading,
+      longReadingQA: pickRandom(p.bank.qa, qaN),
+      longReadingTF: genTrueFalse(p, tfN)
+    };
+    generatedTitle = p.label + ' 長文読解プリント';
+    renderSheet(data, generatedTitle);
+    return;
+  }
+
+  const selected = TYPES.filter(t => state[t.key].on && state[t.key].count > 0);
+  if(selected.length === 0){ errBox.innerHTML = '<div class="err">出題する問題形式を1つ以上選んでください。</div>'; return; }
+
+  const pairs = pairSentences(p.textEn, p.textJa);
+  const data = {};
+  selected.forEach(t=>{
+    const n = state[t.key].count;
+    if(t.key === 'fillBlank') data.fillBlank = genFillBlank(p.textEn, p.textJa, n);
+    else if(t.key === 'reorder') data.reorder = genReorder(p.textEn, p.textJa, n);
+    else if(t.key === 'toJapanese') data.toJapanese = genToJapanese(pairs, n);
+    else if(t.key === 'toEnglish') data.toEnglish = genToEnglish(pairs, n);
+    else if(t.key === 'trueFalse') data.trueFalse = genTrueFalse(p, n);
+    else data[t.key] = pickRandom(p.bank[t.key], n);
+  });
+
+  const hasAny = Object.values(data).some(arr => arr && arr.length);
+  if(!hasAny){ errBox.innerHTML = '<div class="err">出題できる問題がありません。日本語訳が未登録か、問題バンクが空の可能性があります。</div>'; return; }
+
+  generatedTitle = p.label + ' 定期テスト対策プリント';
+  renderSheet(data, generatedTitle);
+});
+
+/* ---------- init ---------- */
+selectedGrade = GRADE_ORDER.find(g => PROGRAMS.some(p => gradeOf(p.label) === g));
+selectedProgramLabel = programsForGrade(selectedGrade)[0].label;
+renderGradeSelect();
+renderProgramSelect();
+onProgramChange();
+</script>
+
+</body>
+</html>
