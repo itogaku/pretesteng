@@ -92,11 +92,13 @@
 
   .passage-block{
     border:1px solid var(--rule-strong); border-radius:3px; background:var(--paper);
-    padding:16px 18px; font-size:13.5px; line-height:2; margin-bottom:16px;
+    padding:14px 18px; font-size:13.5px; line-height:1.8; margin-bottom:16px;
   }
   .blank-num{ color:var(--red); font-weight:700; }
   .underline-seg{ text-decoration:underline; text-decoration-color:var(--red); text-decoration-thickness:1.5px; }
   .underline-label{ color:var(--red); font-size:10px; font-weight:700; margin:0 2px; }
+  .reorder-num{ color:var(--red); font-weight:700; }
+  .reorder-blank-line{ color:var(--rule-strong); letter-spacing:1px; }
   .sub-q{ margin:16px 0 8px; font-size:13px; font-weight:700; }
   .qitem-inline{ display:inline-block; margin:0 16px 8px 0; font-size:12.5px; }
   .ja-hint{ color:var(--ink-soft); font-size:12px; margin-top:3px; }
@@ -573,7 +575,6 @@ const TYPES = [
   { key:'fillBlank',  label:'穴埋め問題',       defCount:5, mode:'auto' },
   { key:'reorder',    label:'並べ替え問題',      defCount:4, mode:'auto' },
   { key:'qa',         label:'Q & A（本文読解）',  defCount:4, mode:'bank' },
-  { key:'trueFalse',  label:'True / False',     defCount:4, mode:'auto' },
   { key:'toJapanese', label:'日本語訳（英→日）',  defCount:4, mode:'pair' },
   { key:'toEnglish',  label:'英作文（日→英）',    defCount:4, mode:'pair' },
 ];
@@ -758,30 +759,40 @@ function genTrueFalse(p, n){
 }
 
 /* ---------- long-reading (exam style) generator ---------- */
-function buildLongReading(p, blankCount, underlineCount){
+function buildLongReading(p, blankCount, underlineCount, reorderCount, toEnglishCount){
   const sentences = splitEnglishSentences(p.textEn);
   const pairs = pairSentences(p.textEn, p.textJa);
   const LABELS = 'abcdefghij';
 
-  const underlineCandidates = [];
-  for(let i=0;i<pairs.length;i++){
-    if(isSubstantialSentence(sentences[i])) underlineCandidates.push(i);
+  // fair round-robin allocation so earlier types (blanks/underlines) don't starve later ones (reorder/toEnglish)
+  const candidateIdxs = sentences.map((s,i)=>i).filter(i => isSubstantialSentence(sentences[i]));
+  const pool = shuffle(candidateIdxs);
+  const targetCount = { underline:underlineCount, blank:blankCount, reorder:reorderCount, toEnglish:toEnglishCount };
+  const assigned = { underline:[], blank:[], reorder:[], toEnglish:[] };
+  let wants = Object.keys(targetCount).filter(k => targetCount[k] > 0);
+  let poolPtr = 0;
+  while(poolPtr < pool.length && wants.length){
+    for(const type of wants.slice()){
+      if(poolPtr >= pool.length) break;
+      const idx = pool[poolPtr];
+      const needsJa = (type === 'underline' || type === 'toEnglish');
+      if(needsJa && !pairs[idx]){ poolPtr++; continue; }
+      if(type === 'blank' && !pickBlankWord(sentences[idx])){ poolPtr++; continue; }
+      assigned[type].push(idx);
+      poolPtr++;
+      if(assigned[type].length >= targetCount[type]) wants = wants.filter(t => t !== type);
+    }
   }
-  const underlineIdxs = pickRandom(underlineCandidates, underlineCount).sort((a,b)=>a-b);
-  const underlineSet = new Set(underlineIdxs);
 
-  const blankCandidates = [];
-  sentences.forEach((s,i)=>{
-    if(underlineSet.has(i)) return;
-    if(!isSubstantialSentence(s)) return;
-    if(pickBlankWord(s)) blankCandidates.push(i);
-  });
-  const blankIdxs = pickRandom(blankCandidates, blankCount).sort((a,b)=>a-b);
-  const blankSet = new Set(blankIdxs);
+  const underlineSet = new Set(assigned.underline);
+  const blankSet = new Set(assigned.blank);
+  const reorderSet = new Set(assigned.reorder);
+  const toEnglishItems = assigned.toEnglish.sort((a,b)=>a-b).map(i => ({ japanese:pairs[i].ja, answer:pairs[i].en }));
 
   const blanks = [];
   const underlines = [];
-  let blankNum = 0, labelIdx = 0;
+  const reorders = [];
+  let blankNum = 0, labelIdx = 0, reorderNum = 0;
 
   const rendered = sentences.map((s,i)=>{
     const safe = esc(s);
@@ -797,29 +808,46 @@ function buildLongReading(p, blankCount, underlineCount){
       underlines.push({ label, english:pairs[i].en, japanese:pairs[i].ja });
       return `<span class="underline-seg">${safe}</span><span class="underline-label">(${label})</span>`;
     }
+    if(reorderSet.has(i)){
+      reorderNum++;
+      const clean = s.replace(/[.?!]+\s*$/,'').trim();
+      const words = clean.split(/\s+/);
+      let shuffled = shuffle(words);
+      if(words.length > 2){
+        let tries = 0;
+        while(shuffled.join(' ') === words.join(' ') && tries < 5){ shuffled = shuffle(words); tries++; }
+      }
+      reorders.push({ num:reorderNum, words:shuffled, answer:s });
+      return `<span class="reorder-num">(${reorderNum})</span> <span class="reorder-blank-line">_______________________________</span>`;
+    }
     return safe;
   });
 
-  return { passageHtml: rendered.join(' '), blanks, underlines };
+  return { passageHtml: rendered.join(' '), blanks, underlines, reorders, toEnglishItems };
 }
 
-function longReadingSectionHTML(lr, qaItems, tfItems, withAnswer){
+function longReadingSectionHTML(lr, qaItems, withAnswer){
   let html = `<div class="qtype-section"><h4>長文読解</h4><div class="passage-block">${lr.passageHtml}</div>`;
+  let qNum = 1;
   if(lr.blanks.length){
-    html += `<div class="sub-q">問1　空所(1)〜(${lr.blanks.length})に入る最も適切な語を書きなさい。</div>`;
+    html += `<div class="sub-q">問${qNum++}　空所(1)〜(${lr.blanks.length})に入る最も適切な語を書きなさい。</div>`;
     html += `<div>${lr.blanks.map(b => `<span class="qitem-inline">(${b.num}) ${withAnswer ? `<span class="ans-text">${esc(b.answer)}</span>` : '<span class="answer-line" style="min-width:90px;"></span>'}</span>`).join('')}</div>`;
   }
   if(lr.underlines.length){
-    html += `<div class="sub-q">問2　下線部${lr.underlines.map(u=>`(${u.label})`).join('')}を日本語に訳しなさい。</div>`;
+    html += `<div class="sub-q">問${qNum++}　下線部${lr.underlines.map(u=>`(${u.label})`).join('')}を日本語に訳しなさい。</div>`;
     html += lr.underlines.map(u => `<div class="qitem"><span class="qn">(${u.label})</span><span class="qbody">${withAnswer ? `<span class="ans-text">${esc(u.japanese)}</span>` : `<div class="answer-line" style="display:block;min-width:100%;height:22px;"></div>`}</span></div>`).join('');
   }
-  if(qaItems.length){
-    html += `<div class="sub-q">問3　次の質問に英語で答えなさい。</div>`;
-    html += qaItems.map((item,i) => questionBody('qa', item, i, withAnswer)).join('');
+  if(lr.reorders.length){
+    html += `<div class="sub-q">問${qNum++}　下線部(1)〜(${lr.reorders.length})の語を並べかえて、意味の通る英文にしなさい。</div>`;
+    html += lr.reorders.map(r => questionBody('reorder', { words:r.words, answer:r.answer }, r.num-1, withAnswer)).join('');
   }
-  if(tfItems.length){
-    html += `<div class="sub-q">問4　本文の内容と合っていれば○、違っていれば×を書きなさい。</div>`;
-    html += tfItems.map((item,i) => questionBody('trueFalse', item, i, withAnswer)).join('');
+  if(lr.toEnglishItems.length){
+    html += `<div class="sub-q">問${qNum++}　次の日本語を英語になおしなさい。</div>`;
+    html += lr.toEnglishItems.map((item,i) => questionBody('toEnglish', item, i, withAnswer)).join('');
+  }
+  if(qaItems.length){
+    html += `<div class="sub-q">問${qNum++}　次の質問に英語で答えなさい。</div>`;
+    html += qaItems.map((item,i) => questionBody('qa', item, i, withAnswer)).join('');
   }
   html += `</div>`;
   return html;
@@ -902,7 +930,7 @@ function availableCount(t){
 }
 function renderTypeList(){
   const el = document.getElementById('typeList');
-  const disabledInLongReading = new Set(['reorder','toEnglish']);
+  const disabledInLongReading = new Set(['trueFalse']);
   el.innerHTML = TYPES.map(t => {
     const isDisabled = printMode === 'longReading' && disabledInLongReading.has(t.key);
     return `
@@ -923,7 +951,7 @@ function renderTypeList(){
     b.addEventListener('click', ()=>{ const k=b.dataset.key; state[k].count=Math.max(1,state[k].count-1); document.getElementById('count-'+k).textContent=state[k].count; });
   });
   document.querySelectorAll('.count-inc').forEach(b=>{
-    b.addEventListener('click', ()=>{ const k=b.dataset.key; state[k].count=Math.min(15,state[k].count+1); document.getElementById('count-'+k).textContent=state[k].count; });
+    b.addEventListener('click', ()=>{ const k=b.dataset.key; state[k].count=Math.min(999,state[k].count+1); document.getElementById('count-'+k).textContent=state[k].count; });
   });
 }
 
@@ -943,7 +971,7 @@ function questionBody(key, item, i, withAnswer){
 }
 function sheetHTML(data, title, withAnswer){
   const sections = data.longReading
-    ? longReadingSectionHTML(data.longReading, data.longReadingQA || [], data.longReadingTF || [], withAnswer)
+    ? longReadingSectionHTML(data.longReading, data.longReadingQA || [], withAnswer)
     : Object.keys(TYPE_LABEL).filter(k => Array.isArray(data[k]) && data[k].length).map(k => `
     <div class="qtype-section"><h4>${TYPE_LABEL[k]}</h4>${data[k].map((item,i)=>questionBody(k,item,i,withAnswer)).join('')}</div>`).join('');
   return `
@@ -992,21 +1020,21 @@ document.getElementById('genBtn').addEventListener('click', ()=>{
   if(printMode === 'longReading'){
     const blankN = state.fillBlank.on ? state.fillBlank.count : 0;
     const underlineN = state.toJapanese.on ? state.toJapanese.count : 0;
+    const reorderN = state.reorder.on ? state.reorder.count : 0;
+    const toEnglishN = state.toEnglish.on ? state.toEnglish.count : 0;
     const qaN = state.qa.on ? state.qa.count : 0;
-    const tfN = state.trueFalse.on ? state.trueFalse.count : 0;
-    if(blankN === 0 && underlineN === 0 && qaN === 0 && tfN === 0){
+    if(blankN === 0 && underlineN === 0 && reorderN === 0 && toEnglishN === 0 && qaN === 0){
       errBox.innerHTML = '<div class="err">出題する項目を1つ以上ONにしてください。</div>';
       return;
     }
-    if(underlineN > 0 && !p.textJa){
-      errBox.innerHTML = '<div class="err">下線部訳を出すには、このProgramに日本語訳を登録してください。</div>';
+    if((underlineN > 0 || toEnglishN > 0) && !p.textJa){
+      errBox.innerHTML = '<div class="err">下線部訳・英作文を出すには、このProgramに日本語訳を登録してください。</div>';
       return;
     }
-    const longReading = buildLongReading(p, blankN, underlineN);
+    const longReading = buildLongReading(p, blankN, underlineN, reorderN, toEnglishN);
     const data = {
       longReading,
-      longReadingQA: pickRandom(p.bank.qa, qaN),
-      longReadingTF: genTrueFalse(p, tfN)
+      longReadingQA: pickRandom(p.bank.qa, qaN)
     };
     generatedTitle = p.label + ' 長文読解プリント';
     renderSheet(data, generatedTitle);
