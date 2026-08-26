@@ -98,6 +98,7 @@
   .underline-seg{ text-decoration:underline; text-decoration-color:var(--red); text-decoration-thickness:1.5px; }
   .underline-label{ color:var(--red); font-size:10px; font-weight:700; margin:0 2px; }
   .reorder-num{ color:var(--red); font-weight:700; }
+  .toeng-num{ color:var(--green); font-weight:700; }
   .reorder-blank-line{ color:var(--rule-strong); letter-spacing:1px; }
   .sub-q{ margin:16px 0 8px; font-size:13px; font-weight:700; }
   .qitem-inline{ display:inline-block; margin:0 16px 8px 0; font-size:12.5px; }
@@ -604,7 +605,7 @@ const STOPWORDS = new Set(['a','an','the','is','are','was','were','am','be','bee
 const LOANWORDS = new Set(['bento','bentos','ekiben','ekibens','kyara-ben','kyaraben','unagi','yokan','udon','kitsune','sushi','natto','ramen','chawan-mushi','chawanmushi','chawan','mushi','ebiken','manga','kanji','anime']);
 
 function isSubstantialSentence(s){
-  return (s.match(/[A-Za-z']+/g) || []).length >= 5;
+  return (s.match(/[A-Za-z']+/g) || []).length >= 3;
 }
 function pickBlankWord(sentence){
   const tokens = sentence.match(/[A-Za-z']+/g) || [];
@@ -787,12 +788,13 @@ function buildLongReading(p, blankCount, underlineCount, reorderCount, toEnglish
   const underlineSet = new Set(assigned.underline);
   const blankSet = new Set(assigned.blank);
   const reorderSet = new Set(assigned.reorder);
-  const toEnglishItems = assigned.toEnglish.sort((a,b)=>a-b).map(i => ({ japanese:pairs[i].ja, answer:pairs[i].en }));
+  const toEnglishSet = new Set(assigned.toEnglish);
 
   const blanks = [];
   const underlines = [];
   const reorders = [];
-  let blankNum = 0, labelIdx = 0, reorderNum = 0;
+  const toEnglishItems = [];
+  let blankNum = 0, labelIdx = 0, reorderNum = 0, toEnglishNum = 0;
 
   const rendered = sentences.map((s,i)=>{
     const safe = esc(s);
@@ -817,8 +819,13 @@ function buildLongReading(p, blankCount, underlineCount, reorderCount, toEnglish
         let tries = 0;
         while(shuffled.join(' ') === words.join(' ') && tries < 5){ shuffled = shuffle(words); tries++; }
       }
-      reorders.push({ num:reorderNum, words:shuffled, answer:s });
+      reorders.push({ num:reorderNum, words:shuffled, answer:s, ja: pairs[i] ? pairs[i].ja : null });
       return `<span class="reorder-num">(${reorderNum})</span> <span class="reorder-blank-line">_______________________________</span>`;
+    }
+    if(toEnglishSet.has(i)){
+      toEnglishNum++;
+      toEnglishItems.push({ num:toEnglishNum, japanese:pairs[i].ja, answer:pairs[i].en });
+      return `<span class="toeng-num">【${toEnglishNum}】</span> <span class="reorder-blank-line">_______________________________</span>`;
     }
     return safe;
   });
@@ -839,11 +846,11 @@ function longReadingSectionHTML(lr, qaItems, withAnswer){
   }
   if(lr.reorders.length){
     html += `<div class="sub-q">問${qNum++}　下線部(1)〜(${lr.reorders.length})の語を並べかえて、意味の通る英文にしなさい。</div>`;
-    html += lr.reorders.map(r => questionBody('reorder', { words:r.words, answer:r.answer }, r.num-1, withAnswer)).join('');
+    html += lr.reorders.map(r => questionBody('reorder', { words:r.words, answer:r.answer, ja:r.ja }, r.num-1, withAnswer)).join('');
   }
   if(lr.toEnglishItems.length){
-    html += `<div class="sub-q">問${qNum++}　次の日本語を英語になおしなさい。</div>`;
-    html += lr.toEnglishItems.map((item,i) => questionBody('toEnglish', item, i, withAnswer)).join('');
+    html += `<div class="sub-q">問${qNum++}　次の日本語を英語になおしなさい。（本文中の【1】【2】…の空所に対応）</div>`;
+    html += lr.toEnglishItems.map(item => questionBody('toEnglish', item, item.num-1, withAnswer)).join('');
   }
   if(qaItems.length){
     html += `<div class="sub-q">問${qNum++}　次の質問に英語で答えなさい。</div>`;
