@@ -54,6 +54,15 @@
   .part-row .ptl{ color:var(--ink-soft); font-size:11.5px; }
   .badge{ font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--ink-soft); border:1px solid var(--rule-strong); border-radius:3px; padding:1px 5px; white-space:nowrap; }
   input[type=checkbox], input[type=radio]{ accent-color:var(--red); width:16px; height:16px; flex:none; cursor:pointer; margin:0; }
+  .study-grid{ display:grid; grid-template-columns:18px minmax(0,1.15fr) 10px minmax(0,1fr); gap:5px 8px; font-size:13.5px; margin-bottom:6px; }
+  .study-grid > div{ padding-bottom:4px; border-bottom:1px dotted var(--rule-strong); }
+  .study-grid .sn{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--red); padding-top:2px; }
+  .study-grid .fold{ border-bottom:0; border-left:1.5px dashed var(--ink-soft); }
+  .study-grid .sj{ font-size:12.5px; }
+  .study-vocab{ display:flex; flex-wrap:wrap; gap:3px 14px; font-size:12px; border:1px solid var(--rule-strong); padding:6px 10px; margin:4px 0 12px; break-inside:avoid; }
+  .study-vocab .svh{ font-weight:700; margin-right:4px; }
+  .study-vocab b{ font-family:inherit; }
+  .cols-2 .study-grid, .cols-3 .study-grid{ grid-template-columns:16px minmax(0,1fr) 8px minmax(0,1fr); }
   .sel-mode{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--ink-soft); margin:0 0 8px; }
   .prog-open{ flex:1; min-width:0; display:flex; gap:8px; align-items:center; border:0; background:none; padding:0; cursor:pointer; text-align:left; font-size:13px; }
   .prog.has-sel{ border-color:var(--ink); }
@@ -420,7 +429,7 @@ const MAINS = [
   { key:'j2e',   label:'英訳（日→英）' },
   { key:'form',  label:'語形変化' },
   { key:'parse', label:'文の要素（ブロック分け）' },
-  { key:'copy',  label:'本文暗記シート（視写・暗写）', wide:true },
+  { key:'copy',  label:'本文暗記シート（本文と訳）', wide:true },
 ];
 const CATS = [['text','本文'],['read','読解'],['vocab','単語']];
 const LONG_KEYS = ['fillBlank','toJapanese','reorder','toEnglish','qa','trueFalse'];
@@ -440,7 +449,7 @@ let S = {
   parse:{ mode:'q', hint:'slash', ja:true, nest:true, type:false },
   j2e:{ hint:'count' },
   form:{ plural:true, ja:false },
-  copy:{ kind:'recall', nest:true, type:true, mods:true },
+  copy:{ kind:'study', layout:'side', vocab:true, nest:true, type:true, mods:true },
   long:{ fillBlank:4, toJapanese:2, reorder:1, toEnglish:1, qa:2, trueFalse:3 },
   extras:{ qa:{on:false,count:3,qj:false}, tf:{on:false,count:4}, vocab:{on:false,count:12,dir:'mix'} },
 };
@@ -450,7 +459,7 @@ let S = {
 if(S.main==='long'){ S.cat='read'; S.read.mode='long'; S.main='fill'; }
 if(S.main==='none' || !MAINS.some(m=>m.key===S.main)) S.main='fill';
 if(S.copy.kind==='roles'){ S.main='parse'; S.parse.mode='sheet'; }
-if(!['trace','recall'].includes(S.copy.kind)) S.copy.kind='recall';
+S.copy.kind='study'; if(!S.copy.layout) S.copy.layout='side'; if(S.copy.vocab===undefined) S.copy.vocab=true;
 let selected = new Set(S.selected);
 let openProgs = new Set();
 let overrides = store('blanks') || {};   // sentence key -> [token indices]
@@ -565,7 +574,9 @@ function renderCat(){
       h = `<div class="opt-row">${chk('form.plural','複数形・三単現の -s も出す')}${chk('form.ja','和訳を添える')}</div>
         <div class="opt-note">形が変わる語がない文は、そのまま表示されます。</div>`; break;
     case 'copy':
-      h = `<div class="opt-row"><span class="lab">種類</span>${seg('copy.kind',[['recall','暗写（訳から英文を書く）'],['trace','視写（英文を写す）']])}</div>`; break;
+      h = `<div class="opt-row"><span class="lab">並べ方</span>${seg('copy.layout',[['side','左右（折って隠せる）'],['stack','英文の下に訳']])}</div>
+        <div class="opt-row">${chk('copy.vocab','新出語の一覧をつける')}</div>
+        <div class="opt-note">本文と訳を見て覚えるためのシートです。覚えたら、同じ単元で穴埋めや並べ替えに進みます。</div>`; break;
     case 'parse':
       h = `<div class="opt-row"><span class="lab">種類</span>${seg('parse.mode',[['q','問題'],['sheet','解説シート（色分け）']])}</div>` + (S.parse.mode==='sheet'
         ? `<div class="opt-row">${chk('copy.nest','節の中も示す')}${chk('copy.type','文型を示す')}${chk('copy.mods','修飾（指定・説明）を示す')}</div><div class="opt-note">本文を主語・動詞・目的語…のブロックに分け、色とラベルで示します（予習・解説用）。</div>`
@@ -804,14 +815,20 @@ const MAIN_GEN = {
     parts.forEach(({p,pt})=>{
       const cap=partCaption(p,pt);
       if(o.kind==='roles') html+=cap+pt.sentences.map((s,i)=>`<div class="row"><span class="qn">${i+1}.</span><div class="qbody"><div class="sp-line">${s.sp?`<span class="sp">${esc(s.sp)}:</span>`:''}${s.rs==='amb'?`<div class="en">${esc(s.en)}<span class="amb-note">（解釈が分かれるため省略）</span></div>`:roleHTML(s,'color',o.nest)}</div>${s.rs==='ok'?modLine(s,o.type,o.mods):''}${s.ja?`<div class="ja-hint">${esc(s.ja)}</div>`:''}</div></div>`).join('');
+      else if(o.kind==='study'){
+        if(o.layout==='side') html+=cap+`<div class="study-grid">${pt.sentences.map((s,i)=>`<div class="sn">${i+1}</div><div class="en">${spk(s)}${esc(s.en)}</div><div class="fold"></div><div class="sj">${esc(s.ja)}</div>`).join('')}</div>`;
+        else html+=cap+pt.sentences.map((s,i)=>`<div class="row"><span class="qn">${i+1}.</span><div class="qbody"><div class="en">${spk(s)}${esc(s.en)}</div><div class="ja-hint">${esc(s.ja)}</div></div></div>`).join('');
+        if(o.vocab && (pt.vocab||[]).length) html+=`<div class="study-vocab"><span class="svh">新出語</span>${pt.vocab.map(v=>`<span class="sv"><b>${esc(v.w)}</b> ${esc(v.m)}</span>`).join('')}</div>`;
+      }
       else if(o.kind==='read') html+=cap+`<div class="read-check">音読した回数 ${'<i></i>'.repeat(10)}</div><div class="read-grid">${pt.sentences.map(s=>`<div class="en">${spk(s)}${esc(s.en)}</div><div>${esc(s.ja)}</div>`).join('')}</div>`;
       else if(o.kind==='trace') html+=cap+pt.sentences.map((s,i)=>`<div class="row"><span class="qn">${i+1}.</span><div class="qbody"><div class="en">${spk(s)}${esc(s.en)}</div><div class="answer-line"></div></div></div>`).join('');
       else { html+=cap+pt.sentences.map((s,i)=>`<div class="row"><span class="qn">${i+1}.</span><div class="qbody"><div>${s.sp?`<span class="sp">${esc(s.sp)}:</span>`:''}${esc(s.ja)}</div><div class="answer-line"></div></div></div>`).join('');
         ans+=cap+pt.sentences.map((s,i)=>`<div class="row"><span class="qn">${i+1}.</span><div class="qbody ans-text">${spk(s)}${esc(s.en)}</div></div>`).join(''); }
     });
     if(o.kind==='roles') html = ROLE_LEGEND + (o.mods?`<div class="opt-note" style="margin:-4px 0 8px">修飾：<b style="color:var(--r-conj)">指定→</b> 前から後ろの語を限定する／<b style="color:var(--r-verb)">説明→</b> 後ろから前の語（文全体）を説明する</div>`:'') + html;
-    const inst={roles:'本文を文の要素（主語・動詞・目的語・説明語句・修飾語など）のブロックに分けて示しています。', read:'本文を声に出して読みましょう。1回読むごとに□に印をつけます。', trace:'英文を見ながら、下の線に書き写しなさい。', recall:'日本語を見て、本文の英文を書きなさい。'}[o.kind];
-    const title={roles:'文の要素（解説シート）',read:'本文シート（音読）',trace:'本文暗記シート（視写）',recall:'本文暗記シート（暗写）'}[o.kind];
+    const inst0={study:'英文と訳を見ながら声に出して読み、本文を覚えましょう。'+(o.layout==='side'?'覚えたら点線で折って訳を隠し、英文の意味を言えるか確かめましょう。':'')};
+    const inst={...inst0, roles:'本文を文の要素（主語・動詞・目的語・説明語句・修飾語など）のブロックに分けて示しています。', read:'本文を声に出して読みましょう。1回読むごとに□に印をつけます。', trace:'英文を見ながら、下の線に書き写しなさい。', recall:'日本語を見て、本文の英文を書きなさい。'}[o.kind];
+    const title={study:'本文暗記シート', roles:'文の要素（解説シート）',read:'本文シート（音読）',trace:'本文暗記シート（視写）',recall:'本文暗記シート（暗写）'}[o.kind];
     return { title, inst, body:html, ans };
   },
 };
@@ -912,8 +929,8 @@ function build(){
   else ex('vocab');
 }
 function sheetHTML(b, title, withAnswer, answerOnly){
-  const header = `<div class="sheet-header"><div class="title-area"><div class="kicker">${answerOnly?'ANSWER KEY / 解答':'TEST PREP PRINT'}</div><h3>${esc(title)}</h3><div class="range">${esc(rangeLabel(b.parts))}</div></div>
-    ${answerOnly?'':`<div class="idbox"><div class="cell"><div class="lbl">組</div></div><div class="cell"><div class="lbl">番</div></div><div class="cell"><div class="lbl">点数</div></div><div class="cell" style="grid-column:span 2;"><div class="lbl">氏名</div></div><div class="cell"><div class="lbl">/100</div></div></div>`}</div>`;
+  const header = `<div class="sheet-header"><div class="title-area"><div class="kicker">${answerOnly?'ANSWER KEY / 解答':(S.cat==='text'&&S.main==='copy')?'STUDY SHEET':'TEST PREP PRINT'}</div><h3>${esc(title)}</h3><div class="range">${esc(rangeLabel(b.parts))}</div></div>
+    ${answerOnly?'':(S.cat==='text'&&S.main==='copy')?`<div class="idbox" style="grid-template-columns:repeat(2,72px)"><div class="cell"><div class="lbl">組</div></div><div class="cell"><div class="lbl">番</div></div><div class="cell" style="grid-column:span 2;border-right:none"><div class="lbl">氏名</div></div></div>`:`<div class="idbox"><div class="cell"><div class="lbl">組</div></div><div class="cell"><div class="lbl">番</div></div><div class="cell"><div class="lbl">点数</div></div><div class="cell" style="grid-column:span 2;"><div class="lbl">氏名</div></div><div class="cell"><div class="lbl">/100</div></div></div>`}</div>`;
   const foot = `<div class="sheet-foot"><span>刷りたてドリル</span><span>No. ${seed}</span></div>`;
   let body='';
   if(b.long){
@@ -931,10 +948,10 @@ function sheetHTML(b, title, withAnswer, answerOnly){
 }
 function renderStage(){
   const stage=document.getElementById('stage'); const b=lastBuild; if(!b) return;
-  const title=document.getElementById('titleInput').value.trim() || (rangeLabel(b.parts) + (S.cat==='read'&&S.read.mode==='long'?' 長文読解プリント':S.cat==='vocab'?' 単語プリント':' 定期テスト対策プリント'));
+  const title=document.getElementById('titleInput').value.trim() || (rangeLabel(b.parts) + (S.cat==='read'&&S.read.mode==='long'?' 長文読解プリント':S.cat==='vocab'?' 単語プリント':(S.cat==='text'&&S.main==='copy')?' 本文暗記シート':' 定期テスト対策プリント'));
   const am=S.ansMode;
   const main = sheetHTML(b, title, am==='inline' && !editMode, false);
-  const ans = am==='separate' && !editMode ? sheetHTML(b, title, false, true) : '';
+  const hasAns = b.long || b.secs.some(x=>x.ans); const ans = am==='separate' && !editMode && hasAns ? sheetHTML(b, title, false, true) : '';
   const canEdit = S.cat==='text' && S.main==='fill';
   stage.innerHTML = `<div class="toolbar no-print">
       <div class="toggles">
